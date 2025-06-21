@@ -538,7 +538,7 @@ export default function ModernAttendancePage() {
                           </div>
 
                          
-                          {/* Agendas */}
+                          {/* Agendas
                           {session.agendaIds && session.agendaIds.length > 0 && (
                             <div className="mb-4">
                               <div className="flex items-center justify-between mb-3">
@@ -560,7 +560,7 @@ export default function ModernAttendancePage() {
                                 ))}
                               </div>
                             </div>
-                          )}
+                          )} */}
 
                           {/* Additional Info */}
                           <div className="grid md:grid-cols-2 gap-4">
