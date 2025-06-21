@@ -216,16 +216,18 @@ export function CheckInModal({
                   <FormLabel className="text-base font-medium">
                     Current Location *
                   </FormLabel>
-                  <FormControl>
+                    <FormControl>
                     <div className="relative">
                       <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
                       <Input
-                        placeholder="Enter your current location"
-                        {...field}
-                        className="pl-11 h-12"
+                      placeholder="Detecting your current location..."
+                      {...field}
+                      className="pl-11 h-12"
+                      disabled
+                      readOnly
                       />
                     </div>
-                  </FormControl>
+                    </FormControl>
                   <FormMessage />
                   <p className="text-xs text-gray-600">
                     Your location helps track attendance accurately

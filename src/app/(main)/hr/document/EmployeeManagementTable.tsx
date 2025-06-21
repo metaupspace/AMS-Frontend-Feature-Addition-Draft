@@ -102,7 +102,6 @@ export function EmployeeManagementTable({
     const colors = {
       HR: "bg-purple-100 text-purple-800",
       EMPLOYEE: "bg-blue-100 text-blue-800",
-      ADMIN: "bg-orange-100 text-orange-800",
     };
     
     return (

@@ -20,7 +20,7 @@ export interface User {
 }
 
 // Role types for the attendance system
-export type UserRole = "HR" | "EMPLOYEE" | "ADMIN";
+export type UserRole = "HR" | "EMPLOYEE" ;
 
 export interface UserPermission {
   route: string;

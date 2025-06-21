@@ -69,7 +69,7 @@ export function WarningModal({
   };
 
   // Determine the button text
-  const buttonText = actionLabel || (logout ? "Logout" : "Delete");
+  const buttonText = actionLabel || (logout ? "Logout" : "Logout");
 
   // Render content - either children (for custom content) or description
   const renderContent = () => {

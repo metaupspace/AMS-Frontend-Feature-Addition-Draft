@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import Image from "next/image";
-import hero_image from "../../../../public/Logo.webp";
+import hero_image from "../../../../public/Meta-Up-Space1.jpg";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "@/components/ui/sonner";
 import { useForm } from "react-hook-form";
@@ -20,7 +20,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
-import { Eye, EyeOff, UserCheck, Clock } from "lucide-react";
+import { Eye, EyeOff, Clock } from "lucide-react";
 import { loginSchema, LoginFormData } from "@/schemas/auth";
 
 export function LoginForm({
@@ -98,41 +98,18 @@ export function LoginForm({
       <Card className="overflow-hidden border-0 shadow-xl">
         <CardContent className="grid grid-cols-1 md:grid-cols-2 p-0">
           {/* Left Panel - Image Section */}
-          <div className="relative hidden md:block bg-gradient-to-br from-[#1E6AB7] to-[#6367B1]">
+          <div className="relative hidden md:block ">
             <div className="absolute inset-0">
               <Image
                 src={hero_image}
                 alt="MetaUpSpace Logo"
                 fill
-                className="object-contain p-8 opacity-30"
+                className="object-contain  "
                 priority
                 sizes="(max-width: 768px) 0px, 50vw"
               />
             </div>
-            {/* Branding */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center p-12 text-white z-10">
-              <div className="mb-6">
-                <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-lg">
-                  <Clock className="w-10 h-10 text-[#1E6AB7]" />
-                </div>
-              </div>
-              <h1 className="text-3xl font-bold mb-3">AttendanceHub</h1>
-              <p className="text-center text-white/80 mb-8">
-                Smart attendance management for modern workplaces
-              </p>
-              
-              {/* Features */}
-              <div className="space-y-3 text-sm">
-                <div className="flex items-center gap-3">
-                  <UserCheck className="w-5 h-5" />
-                  <span>Real-time attendance tracking</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Clock className="w-5 h-5" />
-                  <span>Automated time management</span>
-                </div>
-              </div>
-            </div>
+          
           </div>
 
           {/* Right Panel - Form Section */}

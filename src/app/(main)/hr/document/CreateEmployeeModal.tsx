@@ -37,7 +37,7 @@ const createEmployeeSchema = z.object({
   contact: z.string().min(10, "Contact must be at least 10 digits"),
   role: z.string().min(1, "Role is required"),
   position: z.string().min(1, "Position is required"),
-  yearlySalary: z.number().min(1, "Yearly salary must be greater than 0"),
+  yearlySalary: z.string().min(1, "Yearly salary must be provided"),
   address: z.string().min(1, "Address is required"),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
@@ -63,7 +63,7 @@ export function CreateEmployeeModal({
       contact: "",
       role: "",
       position: "",
-      yearlySalary: 0,
+      yearlySalary: "",
       address: "",
       password: "",
     },
@@ -197,7 +197,6 @@ export function CreateEmployeeModal({
                       <SelectContent>
                         <SelectItem value="HR">HR</SelectItem>
                         <SelectItem value="EMPLOYEE">Employee</SelectItem>
-                        <SelectItem value="ADMIN">Admin</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -234,8 +233,14 @@ export function CreateEmployeeModal({
                       <Input
                         type="number"
                         placeholder="Enter yearly salary"
-                        {...field}
-                        onChange={(e) => field.onChange(Number(e.target.value))}
+                        value={field.value}
+                        onChange={(e) => {
+                          // Allow empty string for controlled input
+                          const val = e.target.value;
+                          field.onChange(val === "" ? "" : val.replace(/^0+/, ""));
+                        }}
+                        min={1}
+                        inputMode="numeric"
                       />
                     </FormControl>
                     <FormMessage />
@@ -272,7 +277,7 @@ export function CreateEmployeeModal({
                   <FormLabel>Password *</FormLabel>
                   <FormControl>
                     <Input
-                      type="password"
+                      type="text"
                       placeholder="Enter password (min 6 characters)"
                       {...field}
                     />

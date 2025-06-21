@@ -12,7 +12,6 @@ import {
   Phone, 
   MapPin, 
   Briefcase, 
-  DollarSign,
   Key,
   Shield,
   Calendar,
@@ -48,7 +47,6 @@ export default function ProfilePage() {
     const colors = {
       HR: "bg-purple-100 text-purple-800",
       EMPLOYEE: "bg-blue-100 text-blue-800",
-      ADMIN: "bg-red-100 text-red-800",
     };
     
     return (
@@ -264,8 +262,7 @@ export default function ProfilePage() {
                   <div>
                     <p className="text-sm text-gray-600">Department</p>
                     <p className="font-medium">
-                      {profile.role === "HR" ? "Human Resources" : 
-                       profile.role === "ADMIN" ? "Administration" : "General"}
+                      {profile.role === "HR" ? "Human Resources" :"General"}
                     </p>
                   </div>
                 </div>
@@ -276,13 +273,11 @@ export default function ProfilePage() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <DollarSign className="h-5 w-5" />
                   Compensation
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center gap-3">
-                  <DollarSign className="h-5 w-5 text-gray-400" />
                   <div>
                     <p className="text-sm text-gray-600">Annual Salary</p>
                     <p className="font-medium text-lg">
@@ -294,7 +289,6 @@ export default function ProfilePage() {
                 {profile.yearlySalary > 0 && (
                   <>
                     <div className="flex items-center gap-3">
-                      <Calendar className="h-5 w-5 text-gray-400" />
                       <div>
                         <p className="text-sm text-gray-600">Monthly Salary</p>
                         <p className="font-medium">

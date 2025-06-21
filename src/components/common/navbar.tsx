@@ -94,8 +94,6 @@ export function Navbar({ className }: NavbarProps) {
     switch (role) {
       case 'HR':
         return 'Human Resources';
-      case 'ADMIN':
-        return 'Administrator';
       case 'EMPLOYEE':
         return 'Employee';
       default:
@@ -108,8 +106,6 @@ export function Navbar({ className }: NavbarProps) {
     switch (role) {
       case 'HR':
         return 'text-purple-600 bg-purple-100';
-      case 'ADMIN':
-        return 'text-red-600 bg-red-100';
       case 'EMPLOYEE':
         return 'text-blue-600 bg-blue-100';
       default:
@@ -205,7 +201,7 @@ export function Navbar({ className }: NavbarProps) {
         onOpenChange={setShowLogoutDialog}
         onDelete={handleLogoutConfirm}
         title="Confirm Logout"
-        description="Are you sure you want to logout? You will need to login again to access the attendance system."
+        description="Are you sure you want to logout? You will need to login again to access the AMS."
       />
     </>
   );

@@ -83,7 +83,7 @@ const SidebarHeader: React.FC<SidebarHeaderProps> = ({ isExpanded, toggleSidebar
         </div>
         <div>
           <h1 className="text-lg font-bold text-gray-900">MetaUpSpace</h1>
-          <p className="text-xs text-gray-500">Attendance System</p>
+          <p className="text-xs text-gray-500">AMS</p>
         </div>
       </div>
     )}
@@ -547,20 +547,19 @@ export function Sidebar() {
     {
       title: "Profile",
       path: "/profile",
-      allowedRoles: ["HR", "EMPLOYEE", "ADMIN"],
+      allowedRoles: ["HR", "EMPLOYEE"],
       icon: <User className="h-5 w-5" />,
     },
     {
       title: "My Attendance",
       path: "/attendance/my-attendance",
-      allowedRoles: ["HR", "EMPLOYEE", "ADMIN"],
+      allowedRoles: ["HR", "EMPLOYEE"],
       icon: <Calendar className="h-5 w-5" />,
-      badge: "New",
     },
     {
       title: "Check In/Out",
       path: "/attendance/check-in-out",
-      allowedRoles: ["HR", "EMPLOYEE", "ADMIN"],
+      allowedRoles: ["HR", "EMPLOYEE"],
       icon: <Clock className="h-5 w-5" />,
     },
     // HR-only section
@@ -569,7 +568,6 @@ export function Sidebar() {
       allowedRoles: ["HR"],
       path: "/hr",
       icon: <Shield className="h-5 w-5" />,
-      badge: "Admin",
     },
   ], []);
 
