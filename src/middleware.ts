@@ -1,5 +1,4 @@
 // middleware.ts
-
 import { NextRequest, NextResponse } from "next/server";
 
 // Utility function to decode JWT token
@@ -40,14 +39,14 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Get token from cookie (middleware only has access to cookies, not sessionStorage)
+  // Get token from cookie
   const token = request.cookies.get("token")?.value;
 
   // Define public routes that don't require authentication
   const publicRoutes = ["/login"];
   const isPublicRoute = publicRoutes.includes(pathname);
 
-  // Root path redirection
+  // Root path redirectionx
   if (pathname === "/") {
     if (token && !isTokenExpired(token)) {
       // Always redirect to profile for authenticated users

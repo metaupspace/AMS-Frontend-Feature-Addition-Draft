@@ -27,12 +27,12 @@ class ApiClient {
           const token = this.getToken();
           if (token) {
             config.headers.Authorization = `Bearer ${token}`;
-            console.log('Adding auth token to request:', config.url); // Debug log
+            console.log('Adding auth token to request:', config.url);
           } else {
-            console.log('No token found for request:', config.url); // Debug log
+            console.log('No token found for request:', config.url);
           }
         } else {
-          console.log('Skipping auth token for public endpoint:', config.url); // Debug log
+          console.log('Skipping auth token for public endpoint:', config.url);
         }
         
         return config;
@@ -70,47 +70,27 @@ class ApiClient {
   private getToken(): string | null {
     if (typeof window === 'undefined') return null;
     
-    // Try sessionStorage first
-    let token = sessionStorage.getItem('token');
-    
-    // If not in sessionStorage, try to get from cookie as fallback
-    if (!token) {
-      const cookies = document.cookie.split(';');
-      const tokenCookie = cookies.find(cookie => cookie.trim().startsWith('token='));
-      if (tokenCookie) {
-        token = tokenCookie.split('=')[1];
-        // Store in sessionStorage for future use
-        sessionStorage.setItem('token', token);
-      }
-    }
-    
-    return token;
+    // Get token from cookie
+    const cookies = document.cookie.split(';');
+    const tokenCookie = cookies.find(cookie => cookie.trim().startsWith('token='));
+    return tokenCookie ? tokenCookie.split('=')[1] : null;
   }
 
   private clearAuthData(): void {
     if (typeof window === 'undefined') return;
     
-    // Clear sessionStorage
-    sessionStorage.removeItem('token');
-    sessionStorage.removeItem('user');
-    sessionStorage.removeItem('employee');
-    
-    // Clear localStorage as fallback (in case there's old data)
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('employee');
-    
     // Clear cookie
-    document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; secure; samesite=strict';
   }
 
   // Public method to set token (used by auth context)
   setToken(token: string): void {
     if (typeof window === 'undefined') return;
     
-    sessionStorage.setItem('token', token);
-    // Also set as cookie for SSR compatibility
-    document.cookie = `token=${token}; path=/; max-age=${7 * 24 * 60 * 60}`; // 7 days
+    // Set token in cookie with 7 days expiration
+    const expires = new Date();
+    expires.setDate(expires.getDate() + 7);
+    document.cookie = `token=${token}; expires=${expires.toUTCString()}; path=/; secure; samesite=strict`;
   }
 
   // Public method to clear auth data

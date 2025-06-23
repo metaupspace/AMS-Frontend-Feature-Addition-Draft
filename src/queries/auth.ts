@@ -1,5 +1,4 @@
 // queries/auth.ts
-
 import { apiClient } from "@/utils/api-client";
 import { LoginRequest, LoginResponse, User } from "@/models/auth";
 
@@ -10,10 +9,22 @@ export const authQueries = {
     return response.data;
   },
 
-  // Get current user data (if needed for profile endpoint)
+  // Get current user data from profile endpoint
   getCurrentUser: async (): Promise<User> => {
-    const response = await apiClient.get<User>("/employee/profile");
-    return response.data;
+    // Since we're using the profile endpoint, we need to fetch from employee profile
+    // and transform it to User format
+    const response = await apiClient.get<any>("/employee/profile");
+    const profileData = response.data;
+    
+    // Transform profile data to User format
+    const userData: User = {
+      employeeId: profileData.employeeId,
+      email: profileData.email,
+      role: profileData.role,
+      token: '', // Token will be handled by cookie
+    };
+    
+    return userData;
   },
 
   // Logout user (if server-side logout is needed)
@@ -39,5 +50,10 @@ export const authQueries = {
     } catch {
       return false;
     }
+  },
+
+  // Change password
+  changePassword: async (data: { currentPassword: string; newPassword: string }): Promise<void> => {
+    await apiClient.post("/auth/change-password", data);
   },
 };

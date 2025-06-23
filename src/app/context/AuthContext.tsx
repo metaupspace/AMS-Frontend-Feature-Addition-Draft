@@ -33,38 +33,98 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const isAuthenticated = !!user && !!employee;
 
-  // Initialize auth state from sessionStorage
+  // Get token from cookie
+  const getTokenFromCookie = (): string | null => {
+    if (typeof window === 'undefined') return null;
+    
+    const cookies = document.cookie.split(';');
+    const tokenCookie = cookies.find(cookie => cookie.trim().startsWith('token='));
+    return tokenCookie ? tokenCookie.split('=')[1] : null;
+  };
+
+  // Set token in cookie
+  const setTokenInCookie = (token: string) => {
+    if (typeof window === 'undefined') return;
+    
+    // Set cookie with 7 days expiration
+    const expires = new Date();
+    expires.setDate(expires.getDate() + 7);
+    document.cookie = `token=${token}; expires=${expires.toUTCString()}; path=/; secure; samesite=strict`;
+  };
+
+  // Clear token from cookie
+  const clearTokenFromCookie = () => {
+    if (typeof window === 'undefined') return;
+    
+    document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; secure; samesite=strict';
+  };
+
+  // Fetch profile data from server
+  const fetchProfileData = async (): Promise<{ user: User; employee: EmployeeProfile } | null> => {
+    try {
+      console.log('Fetching profile data from server...');
+      
+      // Fetch employee profile which should contain all user data
+      const profileData = await employeeQueries.getProfile();
+      
+      if (!profileData) {
+        console.error('No profile data received');
+        return null;
+      }
+
+      // Create user object from profile data
+      const userData: User = {
+        employeeId: profileData.employeeId,
+        email: profileData.email,
+        role: profileData.role,
+        token: getTokenFromCookie() || '', // Get token from cookie
+      };
+
+      console.log('Profile data fetched successfully:', { 
+        employeeId: userData.employeeId, 
+        role: userData.role 
+      });
+
+      return { user: userData, employee: profileData };
+    } catch (error) {
+      console.error('Error fetching profile data:', error);
+      return null;
+    }
+  };
+
+  // Initialize auth state on app load
   useEffect(() => {
     const initializeAuth = async () => {
       try {
+        console.log('Initializing auth state...');
+        
         // Check if we're in the browser
         if (typeof window === 'undefined') {
           setIsInitialized(true);
           return;
         }
 
-        const token = sessionStorage.getItem('token');
-        const savedUser = sessionStorage.getItem('user');
-        const savedEmployee = sessionStorage.getItem('employee');
-
-        if (token && savedUser && savedEmployee) {
-          try {
-            const userData = JSON.parse(savedUser);
-            const employeeData = JSON.parse(savedEmployee);
-            
-            setUser(userData);
-            setEmployee(employeeData);
-            
-            // Verify token is still valid by making a test request
-            await authQueries.getCurrentUser();
-            
-            console.log('Auth state restored from sessionStorage');
-          } catch (error) {
-            console.error('Invalid stored auth data or expired token:', error);
+        const token = getTokenFromCookie();
+        
+        if (token) {
+          console.log('Token found in cookie, fetching profile...');
+          
+          // Set token in API client
+          apiClient.setToken(token);
+          
+          // Fetch fresh profile data from server
+          const profileData = await fetchProfileData();
+          
+          if (profileData) {
+            setUser(profileData.user);
+            setEmployee(profileData.employee);
+            console.log('Auth state initialized successfully');
+          } else {
+            console.log('Failed to fetch profile data, clearing auth');
             clearAuthData();
           }
         } else {
-          console.log('No stored auth data found');
+          console.log('No token found in cookie');
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
@@ -78,37 +138,32 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   const saveAuthData = (userData: User, employeeData: EmployeeProfile, token: string) => {
-    if (typeof window === 'undefined') return;
-    
     try {
-      sessionStorage.setItem('user', JSON.stringify(userData));
-      sessionStorage.setItem('employee', JSON.stringify(employeeData));
+      // Save token to cookie
+      setTokenInCookie(token);
+      
+      // Set token in API client
       apiClient.setToken(token);
       
+      // Update state
       setUser(userData);
       setEmployee(employeeData);
       
-      console.log('Auth data saved to sessionStorage');
+      console.log('Auth data saved successfully');
     } catch (error) {
       console.error('Error saving auth data:', error);
     }
   };
 
   const clearAuthData = () => {
-    if (typeof window === 'undefined') return;
-    
     try {
-      sessionStorage.removeItem('token');
-      sessionStorage.removeItem('user');
-      sessionStorage.removeItem('employee');
+      // Clear cookie
+      clearTokenFromCookie();
       
-      // Also clear localStorage as fallback (in case there's old data)
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      localStorage.removeItem('employee');
-      
+      // Clear API client token
       apiClient.clearAuth();
       
+      // Clear state
       setUser(null);
       setEmployee(null);
       
@@ -135,27 +190,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return false;
       }
 
-      // Get employee profile
-      console.log('Fetching employee profile...');
       // Set token temporarily for the profile request
       apiClient.setToken(loginResponse.token);
       
-      const employeeProfile = await employeeQueries.getProfile();
-      console.log('Employee profile received:', { hasProfile: !!employeeProfile });
+      // Fetch fresh profile data from server
+      console.log('Fetching employee profile after login...');
+      const profileData = await fetchProfileData();
 
-      if (!employeeProfile) {
+      if (!profileData) {
         console.error('Failed to fetch employee profile');
         clearAuthData();
         return false;
       }
-      const user: User = {
-        employeeId: loginResponse.employeeId,
-        email: loginResponse.email,
-        role: loginResponse.role,
-        token: loginResponse.token,
-      };
-      // Save all auth data
-      saveAuthData(user, employeeProfile, loginResponse.token);
+
+      // Save all auth data including token in cookie
+      saveAuthData(profileData.user, profileData.employee, loginResponse.token);
       
       console.log('Login successful');
       return true;
@@ -189,19 +238,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       console.log('Refreshing profile data...');
       
-      const [userData, employeeData] = await Promise.all([
-        authQueries.getCurrentUser(),
-        employeeQueries.getProfile()
-      ]);
+      const profileData = await fetchProfileData();
 
-      if (userData && employeeData) {
-        const currentToken = sessionStorage.getItem('token');
+      if (profileData) {
+        const currentToken = getTokenFromCookie();
         if (currentToken) {
-          saveAuthData(userData, employeeData, currentToken);
-          console.log('Profile data refreshed');
+          saveAuthData(profileData.user, profileData.employee, currentToken);
+          console.log('Profile data refreshed successfully');
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error refreshing profile:', error);
       // If refresh fails due to auth issues, logout
       if (error?.response?.status === 401) {
