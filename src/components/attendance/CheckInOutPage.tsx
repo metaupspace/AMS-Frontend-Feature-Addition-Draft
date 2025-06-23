@@ -97,8 +97,6 @@ export default function CheckInOutPage() {
     }
   };
 
- 
-
 
   const formatShortDate = (date) => {
     return date.toLocaleDateString('en-US', { 
