@@ -6,6 +6,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import Image from "next/image";
 import hero_image from "../../../../public/Meta-Up-Space1.jpg";
+
+import hero_image1 from "../../../../public/favicon.jpg";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "@/components/ui/sonner";
 import { useForm } from "react-hook-form";
@@ -116,10 +118,17 @@ export function LoginForm({
           <div className="flex flex-col justify-center p-8 md:p-12 gap-4">
             {/* Mobile Header */}
             <div className="md:hidden text-center mb-6">
-              <div className="w-16 h-16 bg-[#EDF8FD] rounded-full flex items-center justify-center mx-auto mb-4">
-                <Clock className="w-8 h-8 text-[#1E6AB7]" />
-              </div>
-              <h1 className="text-2xl font-bold text-gray-900">AttendanceHub</h1>
+                <div className="w-20 h-20  rounded-full flex items-center justify-center mx-auto  overflow-hidden">
+                <Image
+                  src={hero_image1}
+                  alt="MetaUpSpace Logo"
+                  width={100}
+                  height={100}
+                  className="object-cover"
+                  priority
+                />
+                </div>
+              <h1 className="text-2xl font-bold text-gray-900">MetaUpSpace AMS</h1>
             </div>
 
             <div className="mb-6">
