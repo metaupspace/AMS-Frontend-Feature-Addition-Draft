@@ -39,8 +39,8 @@ import { toast } from "@/hooks/use-toast";
 import { CheckOutRequest, AttendanceRecord } from "@/models/attendance";
 
 const checkOutSchema = z.object({
-  remark: z.string().optional(),
-  referenceLink: z.string().url("Must be a valid URL").optional().or(z.literal("")),
+  remark: z.string(),
+  referenceLink: z.string().url("Must be a valid URL").or(z.literal("")),
 });
 
 type CheckOutFormData = z.infer<typeof checkOutSchema>;
@@ -266,7 +266,7 @@ export function CheckOutModal({
                 <FormItem>
                   <FormLabel className="flex items-center gap-2">
                     <MessageSquare className="h-4 w-4" />
-                    End-of-Day Remarks (Optional)
+                    End-of-Day Remarks 
                   </FormLabel>
                   <FormControl>
                     <Textarea
@@ -276,9 +276,7 @@ export function CheckOutModal({
                     />
                   </FormControl>
                   <FormMessage />
-                  <p className="text-xs text-gray-600">
-                    Optional: Add any comments about your work today
-                  </p>
+                
                 </FormItem>
               )}
             />
@@ -291,7 +289,7 @@ export function CheckOutModal({
                 <FormItem>
                   <FormLabel className="flex items-center gap-2">
                     <ExternalLink className="h-4 w-4" />
-                    Reference Link (Optional)
+                    Reference Link 
                   </FormLabel>
                   <FormControl>
                     <Input
@@ -301,9 +299,7 @@ export function CheckOutModal({
                     />
                   </FormControl>
                   <FormMessage />
-                  <p className="text-xs text-gray-600">
-                    Optional: Link to any relevant work, documentation, or project
-                  </p>
+                 
                 </FormItem>
               )}
             />
