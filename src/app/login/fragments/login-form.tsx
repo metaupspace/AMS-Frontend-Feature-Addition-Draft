@@ -22,7 +22,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
-import { Eye, EyeOff, Clock } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import { loginSchema, LoginFormData } from "@/schemas/auth";
 
 export function LoginForm({
