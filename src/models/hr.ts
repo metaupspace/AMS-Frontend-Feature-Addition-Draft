@@ -23,7 +23,7 @@ export interface CreateEmployeeRequest {
   contact: string;
   role: string;
   position: string;
-  yearlySalary: number;
+  // yearlySalary: number;
   address: string;
   password: string;
 }

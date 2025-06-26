@@ -40,7 +40,7 @@ import { CheckOutRequest, AttendanceRecord } from "@/models/attendance";
 
 const checkOutSchema = z.object({
   remark: z.string(),
-  referenceLink: z.string().url("Must be a valid URL").or(z.literal("")),
+  referenceLink: z.string(),
 });
 
 type CheckOutFormData = z.infer<typeof checkOutSchema>;

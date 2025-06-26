@@ -34,14 +34,14 @@ export default function ProfilePage() {
     queryFn: employeeQueries.getProfile,
   });
 
-  const formatSalary = (salary: number) => {
-    if (salary === 0) return "Not specified";
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 0,
-    }).format(salary);
-  };
+  // const formatSalary = (salary: number) => {
+  //   if (salary === 0) return "Not specified";
+  //   return new Intl.NumberFormat('en-IN', {
+  //     style: 'currency',
+  //     currency: 'INR',
+  //     maximumFractionDigits: 0,
+  //   }).format(salary);
+  // };
 
   const getRoleBadge = (role: string) => {
     const colors = {
@@ -269,7 +269,7 @@ export default function ProfilePage() {
               </CardContent>
             </Card>
 
-            {/* Compensation */}
+            {/* Compensation
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -305,7 +305,7 @@ export default function ProfilePage() {
                   </>
                 )}
               </CardContent>
-            </Card>
+            </Card> */}
           </div>
         </TabsContent>
       </Tabs>
