@@ -37,7 +37,7 @@ const createEmployeeSchema = z.object({
   contact: z.string().min(10, "Contact must be at least 10 digits"),
   role: z.string().min(1, "Role is required"),
   position: z.string().min(1, "Position is required"),
-  yearlySalary: z.string().min(1, "Yearly salary must be provided"),
+  // yearlySalary: z.string().min(1, "Yearly salary must be provided"),
   address: z.string().min(1, "Address is required"),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
@@ -63,7 +63,7 @@ export function CreateEmployeeModal({
       contact: "",
       role: "",
       position: "",
-      yearlySalary: "",
+      // yearlySalary: "",
       address: "",
       password: "",
     },
@@ -95,7 +95,7 @@ export function CreateEmployeeModal({
     contact,
     role,
     position,
-    yearlySalary,
+    // yearlySalary,
     address,
     password,
   }: CreateEmployeeFormData) => {
@@ -105,7 +105,7 @@ export function CreateEmployeeModal({
       contact,
       role,
       position,
-      yearlySalary: Number(yearlySalary),
+      // yearlySalary: Number(yearlySalary),
       address,
       password,
     };
@@ -223,7 +223,7 @@ export function CreateEmployeeModal({
               />
 
               {/* Yearly Salary */}
-              <FormField
+              {/* <FormField
                 control={form.control}
                 name="yearlySalary"
                 render={({ field }) => (
@@ -246,7 +246,7 @@ export function CreateEmployeeModal({
                     <FormMessage />
                   </FormItem>
                 )}
-              />
+              /> */}
             </div>
 
             {/* Address */}
