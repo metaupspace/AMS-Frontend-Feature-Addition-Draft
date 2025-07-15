@@ -34,13 +34,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const isAuthenticated = !!user && !!employee;
 
   // Get token from cookie
-  const getTokenFromCookie = (): string | null => {
+  const getTokenFromCookie = React.useCallback((): string | null => {
     if (typeof window === 'undefined') return null;
     
     const cookies = document.cookie.split(';');
     const tokenCookie = cookies.find(cookie => cookie.trim().startsWith('token='));
     return tokenCookie ? tokenCookie.split('=')[1] : null;
-  };
+  }, []);
 
   // Set token in cookie
   const setTokenInCookie = (token: string) => {
@@ -60,7 +60,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   // Fetch profile data from server
-  const fetchProfileData = async (): Promise<{ user: User; employee: EmployeeProfile } | null> => {
+  const fetchProfileData = React.useCallback(async (): Promise<{ user: User; employee: EmployeeProfile } | null> => {
     try {
       console.log('Fetching profile data from server...');
       
@@ -90,7 +90,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
       console.error('Error fetching profile data:', error);
       return null;
     }
-  };
+  }, [getTokenFromCookie]);
+
+    const clearAuthData = React.useCallback(() => {
+    try {
+      // Clear cookie
+      clearTokenFromCookie();
+      
+      // Clear API client token
+      apiClient.clearAuth();
+      
+      // Clear state
+      setUser(null);
+      setEmployee(null);
+      
+      console.log('Auth data cleared');
+    } catch (error) {
+      console.error('Error clearing auth data:', error);
+    }
+  }, []);
 
   // Initialize auth state on app load
   useEffect(() => {
@@ -135,7 +153,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
 
     initializeAuth();
-  }, []);
+  }, [clearAuthData, fetchProfileData, getTokenFromCookie]);
 
   const saveAuthData = (userData: User, employeeData: EmployeeProfile, token: string) => {
     try {
@@ -155,23 +173,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
-  const clearAuthData = () => {
-    try {
-      // Clear cookie
-      clearTokenFromCookie();
-      
-      // Clear API client token
-      apiClient.clearAuth();
-      
-      // Clear state
-      setUser(null);
-      setEmployee(null);
-      
-      console.log('Auth data cleared');
-    } catch (error) {
-      console.error('Error clearing auth data:', error);
-    }
-  };
+
 
   const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
