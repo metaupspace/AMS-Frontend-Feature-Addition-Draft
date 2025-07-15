@@ -4,7 +4,8 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { ClientAuthProvider } from "./context/ClientAuthProvider";
 import ErrorBoundary from "./context/ErrorBoundary";
-
+import { SpeedInsights } from "@vercel/speed-insights/next";
+import { Analytics } from "@vercel/analytics/next";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -33,6 +34,8 @@ export default function RootLayout({
       >
         <ErrorBoundary>
           <ClientAuthProvider>
+            <SpeedInsights />
+            <Analytics />
             {children}
           </ClientAuthProvider>
         </ErrorBoundary>
