@@ -1,0 +1,30 @@
+# Node modules (always ignore these – installed in Docker)
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Build output
+out
+dist
+
+# Local config
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+
+# Editor & OS junk
+.DS_Store
+.vscode
+.idea
+*.swp
+*.swo
+Thumbs.db
+
+# Git stuff
+.git
+.gitignore
+
+# Docker cache/staging
+docker-compose.override.yml
