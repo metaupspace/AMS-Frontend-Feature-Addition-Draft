@@ -1,2 +1,2 @@
-export const url= "https://ams-backend-production-64ed.up.railway.app/api"
+export const url= "https://api.ams.metaupspace.com/"
 
