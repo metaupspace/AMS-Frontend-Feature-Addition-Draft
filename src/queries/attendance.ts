@@ -9,7 +9,8 @@ import {
   AttendanceRecord,
   AttendanceAgenda,
   MonthlyAttendanceParams,
-  DailyAttendanceParams
+  DailyAttendanceParams,
+  AttendanceEditRequest
 } from "@/models/attendance";
 
 // New interface for active session response
@@ -223,4 +224,9 @@ export const attendanceQueries = {
     const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
     return await attendanceQueries.getDailyAttendance({ employeeId, date: today });
   },
+  requestEditAttendance: async(data : AttendanceEditRequest): Promise<AttendanceEditRequest |null>=>{
+    console.log("Send Attendance Edit Request")
+
+    return null;
+  }
 };

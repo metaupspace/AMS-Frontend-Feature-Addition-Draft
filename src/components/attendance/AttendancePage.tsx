@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
+import EditAttendance from "./EditAttendance";
 import {
   Table,
   TableBody,
@@ -28,7 +29,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { 
+import {
   CalendarDays,
   Clock,
   CheckCircle,
@@ -41,7 +42,7 @@ import {
   ExternalLink,
   LogIn,
   LogOut,
-  Users
+  Users,
 } from "lucide-react";
 import { format, isSameDay } from "date-fns";
 import { attendanceQueries } from "@/queries/attendance";
@@ -61,7 +62,9 @@ export default function ModernAttendancePage() {
   }, []);
 
   // Wait for auth to be initialized before making queries
-  const canMakeQueries = Boolean(isInitialized && !authLoading && user?.employeeId && employee?.employeeId);
+  const canMakeQueries = Boolean(
+    isInitialized && !authLoading && user?.employeeId && employee?.employeeId
+  );
 
   // Get all attendance records
   const {
@@ -71,20 +74,30 @@ export default function ModernAttendancePage() {
   } = useQuery({
     queryKey: ["attendance-records", employee?.employeeId],
     queryFn: () => {
-      console.log("Querying attendance records for employee:", employee?.employeeId);
+      console.log(
+        "Querying attendance records for employee:",
+        employee?.employeeId
+      );
       return attendanceQueries.getAttendanceRecords(employee!.employeeId);
     },
     enabled: canMakeQueries,
     retry: 3,
-    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000)
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
   // Get monthly attendance
-  const {
-  } = useQuery({
-    queryKey: ["monthly-attendance", employee?.employeeId, selectedMonth.getFullYear(), selectedMonth.getMonth() + 1],
+  const {} = useQuery({
+    queryKey: [
+      "monthly-attendance",
+      employee?.employeeId,
+      selectedMonth.getFullYear(),
+      selectedMonth.getMonth() + 1,
+    ],
     queryFn: () => {
-      console.log("Querying monthly attendance for employee:", employee?.employeeId);
+      console.log(
+        "Querying monthly attendance for employee:",
+        employee?.employeeId
+      );
       return attendanceQueries.getMonthlyAttendance({
         employeeId: employee!.employeeId,
         year: selectedMonth.getFullYear(),
@@ -93,17 +106,17 @@ export default function ModernAttendancePage() {
     },
     enabled: canMakeQueries,
     retry: 3,
-    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000)
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
   const formatTime = (timeString) => {
-    if (!isClient || !timeString) return 'N/A';
-    
+    if (!isClient || !timeString) return "N/A";
+
     try {
       const date = new Date(timeString);
       return format(date, "hh:mm a");
     } catch (error) {
-      return 'Invalid Time' + error.message;
+      return "Invalid Time" + error.message;
     }
   };
 
@@ -141,34 +154,52 @@ export default function ModernAttendancePage() {
 
   // Get all sessions for a specific date
   const getDailyRecords = (date) => {
-    return attendanceRecords.filter(record => 
-      isSameDay(new Date(record.checkInTime), date)
-    ).sort((a, b) => new Date(a.checkInTime).getTime() - new Date(b.checkInTime).getTime());
+    return attendanceRecords
+      .filter((record) => isSameDay(new Date(record.checkInTime), date))
+      .sort(
+        (a, b) =>
+          new Date(a.checkInTime).getTime() - new Date(b.checkInTime).getTime()
+      );
   };
 
- 
   const filteredRecords = attendanceRecords
     .filter((record) => {
-      const matchesSearch = 
-        format(new Date(record.checkInTime), "MMM dd, yyyy").toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (record.remark && record.remark.toLowerCase().includes(searchTerm.toLowerCase()));
-      
-      const matchesStatus = 
+      const matchesSearch =
+        format(new Date(record.checkInTime), "MMM dd, yyyy")
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
+        (record.remark &&
+          record.remark.toLowerCase().includes(searchTerm.toLowerCase()));
+
+      const matchesStatus =
         statusFilter === "all" ||
         (statusFilter === "active" && record.activeSession) ||
-        (statusFilter === "completed" && record.checkOutTime && !record.activeSession) ||
-        (statusFilter === "incomplete" && !record.checkOutTime && !record.activeSession);
+        (statusFilter === "completed" &&
+          record.checkOutTime &&
+          !record.activeSession) ||
+        (statusFilter === "incomplete" &&
+          !record.checkOutTime &&
+          !record.activeSession);
 
       return matchesSearch && matchesStatus;
     })
-    .sort((a, b) => new Date(b.checkInTime).getTime() - new Date(a.checkInTime).getTime());
+    .sort(
+      (a, b) =>
+        new Date(b.checkInTime).getTime() - new Date(a.checkInTime).getTime()
+    );
 
   const handleDateClick = (date) => {
     setSelectedDate(date);
     setDailyDetailModal(true);
   };
 
- 
+  const handleUpdate = async () => {
+    //implemetation of handleUpdate function left
+  };
+
+  const handlDelete = async () =>{
+    //implementaion of handleDelete is Lleft
+  }
 
   // Show loading state while auth is initializing or client is not ready
   if (!isClient || !isInitialized || authLoading) {
@@ -227,9 +258,12 @@ export default function ModernAttendancePage() {
               <div className="flex items-center gap-3">
                 <AlertCircle className="h-5 w-5 text-red-500" />
                 <div>
-                  <h4 className="font-medium text-red-900">Data Loading Error</h4>
+                  <h4 className="font-medium text-red-900">
+                    Data Loading Error
+                  </h4>
                   <p className="text-sm text-red-700">
-                    Failed to load attendance records. Please try refreshing the page.
+                    Failed to load attendance records. Please try refreshing the
+                    page.
                   </p>
                 </div>
               </div>
@@ -261,7 +295,7 @@ export default function ModernAttendancePage() {
                     },
                     active: (date) => {
                       const records = getDailyRecords(date);
-                      return records.some(record => record.activeSession);
+                      return records.some((record) => record.activeSession);
                     },
                     absent: (date) => {
                       const today = new Date();
@@ -270,23 +304,23 @@ export default function ModernAttendancePage() {
                     },
                   }}
                   modifiersStyles={{
-                    present: { 
-                      backgroundColor: '#dcfce7', 
-                      color: '#166534',
-                      fontWeight: '600',
-                      borderRadius: '8px'
+                    present: {
+                      backgroundColor: "#dcfce7",
+                      color: "#166534",
+                      fontWeight: "600",
+                      borderRadius: "8px",
                     },
-                    active: { 
-                      backgroundColor: '#1F6CB6', 
-                      color: 'white',
-                      fontWeight: '600',
-                      borderRadius: '8px'
+                    active: {
+                      backgroundColor: "#1F6CB6",
+                      color: "white",
+                      fontWeight: "600",
+                      borderRadius: "8px",
                     },
                     absent: {
-                      backgroundColor: '#fecaca',
-                      color: '#dc2626',
-                      fontWeight: '600',
-                      borderRadius: '8px'
+                      backgroundColor: "#fecaca",
+                      color: "#dc2626",
+                      fontWeight: "600",
+                      borderRadius: "8px",
                     },
                   }}
                   classNames={{
@@ -299,7 +333,7 @@ export default function ModernAttendancePage() {
                 />
               </div>
             </div>
-            
+
             <div className="mt-6 flex justify-center">
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                 <div className="flex items-center gap-2">
@@ -328,7 +362,7 @@ export default function ModernAttendancePage() {
                 Attendance History
               </CardTitle>
             </div>
-            
+
             {/* Filters */}
             <div className="flex flex-col sm:flex-row gap-4 mt-4">
               <div className="relative flex-1">
@@ -340,7 +374,7 @@ export default function ModernAttendancePage() {
                   className="pl-10 border-gray-200 focus:border-[#1F6CB6] transition-colors duration-200"
                 />
               </div>
-              
+
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-40 border-gray-200 focus:border-[#1F6CB6] transition-colors duration-200">
                   <Filter className="h-4 w-4 mr-2" />
@@ -355,62 +389,89 @@ export default function ModernAttendancePage() {
               </Select>
             </div>
           </CardHeader>
-          
+
           <CardContent>
             <div className="rounded-lg border border-gray-200 overflow-hidden">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-[#F7FCFE]">
-                    <TableHead className="font-semibold text-[#1F6CB6]">Date</TableHead>
-                    <TableHead className="font-semibold text-[#1F6CB6]">Check In</TableHead>
-                    <TableHead className="font-semibold text-[#1F6CB6]">Check Out</TableHead>
-                    <TableHead className="font-semibold text-[#1F6CB6]">Duration</TableHead>
-                    <TableHead className="font-semibold text-[#1F6CB6]">Status</TableHead>
-                    <TableHead className="font-semibold text-[#1F6CB6]">Remark</TableHead>
+                    <TableHead className="font-semibold text-[#1F6CB6]">
+                      Date
+                    </TableHead>
+                    <TableHead className="font-semibold text-[#1F6CB6]">
+                      Check In
+                    </TableHead>
+                    <TableHead className="font-semibold text-[#1F6CB6]">
+                      Check Out
+                    </TableHead>
+                    <TableHead className="font-semibold text-[#1F6CB6]">
+                      Duration
+                    </TableHead>
+                    <TableHead className="font-semibold text-[#1F6CB6]">
+                      Status
+                    </TableHead>
+                    <TableHead className="font-semibold text-[#1F6CB6]">
+                      Remark
+                    </TableHead>
+                    <TableHead className="font-semibold text-[#1F6CB6]">
+                      Edit
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredRecords.map((record) => (
-                    <TableRow 
+                    <TableRow
                       key={record.id}
                       className="hover:bg-[#F7FCFE] transition-colors border-b border-gray-100"
                     >
                       <TableCell>
                         <div>
                           <p className="font-medium text-gray-900">
-                            {format(new Date(record.checkInTime), "MMM dd, yyyy")}
+                            {format(
+                              new Date(record.checkInTime),
+                              "MMM dd, yyyy"
+                            )}
                           </p>
                           <p className="text-xs text-gray-500">
                             {format(new Date(record.checkInTime), "EEEE")}
                           </p>
                         </div>
                       </TableCell>
-                      
+
                       <TableCell>
                         <span className="font-medium text-gray-900">
                           {formatTime(record.checkInTime)}
                         </span>
                       </TableCell>
-                      
+
                       <TableCell>
                         <span className="font-medium text-gray-900">
-                          {record.checkOutTime ? formatTime(record.checkOutTime) : "N/A"}
+                          {record.checkOutTime
+                            ? formatTime(record.checkOutTime)
+                            : "N/A"}
                         </span>
                       </TableCell>
-                      
+
                       <TableCell>
                         <span className="font-medium text-gray-900">
                           {formatDuration(record.minutesWorked)}
                         </span>
                       </TableCell>
-                      
-                      <TableCell>
-                        {getStatusBadge(record)}
-                      </TableCell>
-                      
+
+                      <TableCell>{getStatusBadge(record)}</TableCell>
+
                       <TableCell>
                         <span className="text-sm text-gray-600 max-w-[150px] truncate block">
                           {record.remark || "No remark"}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-gray-600 max-w-[150px] truncate block">
+                          <EditAttendance
+                            record={record}
+                            onUpdate={handleUpdate}
+                            onDelete={handlDelete}
+                          />
                         </span>
                       </TableCell>
                     </TableRow>
@@ -426,10 +487,9 @@ export default function ModernAttendancePage() {
                   No Records Found
                 </h3>
                 <p className="text-gray-600">
-                  {searchTerm || statusFilter !== "all" 
+                  {searchTerm || statusFilter !== "all"
                     ? "No attendance records match your current filters."
-                    : "No attendance records found."
-                  }
+                    : "No attendance records found."}
                 </p>
                 {(searchTerm || statusFilter !== "all") && (
                   <Button
@@ -449,10 +509,18 @@ export default function ModernAttendancePage() {
             {filteredRecords.length > 0 && (
               <div className="flex items-center justify-between pt-4 border-t border-gray-200 mt-4">
                 <p className="text-sm text-gray-600">
-                  Showing {filteredRecords.length} of {attendanceRecords.length} records
+                  Showing {filteredRecords.length} of {attendanceRecords.length}{" "}
+                  records
                 </p>
                 <p className="text-sm text-gray-600">
-                  Total hours: {(filteredRecords.reduce((sum, r) => sum + (r.minutesWorked || 0), 0) / 60).toFixed(1)}h
+                  Total hours:{" "}
+                  {(
+                    filteredRecords.reduce(
+                      (sum, r) => sum + (r.minutesWorked || 0),
+                      0
+                    ) / 60
+                  ).toFixed(1)}
+                  h
                 </p>
               </div>
             )}
@@ -466,15 +534,19 @@ export default function ModernAttendancePage() {
               <DialogTitle className="flex items-center justify-between text-[#1F6CB6]">
                 <span className="flex items-center gap-2">
                   <CalendarDays className="h-5 w-5" />
-                  {selectedDate && format(selectedDate, "MMM dd, yyyy")} - Daily Details
+                  {selectedDate && format(selectedDate, "MMM dd, yyyy")} - Daily
+                  Details
                 </span>
                 <div className="flex items-center gap-2 text-sm">
                   <Users className="h-4 w-4" />
-                  <span>{selectedDateRecords.length} session{selectedDateRecords.length !== 1 ? 's' : ''}</span>
+                  <span>
+                    {selectedDateRecords.length} session
+                    {selectedDateRecords.length !== 1 ? "s" : ""}
+                  </span>
                 </div>
               </DialogTitle>
             </DialogHeader>
-            
+
             <div className="space-y-6">
               {selectedDateRecords.length > 0 ? (
                 <>
@@ -482,14 +554,19 @@ export default function ModernAttendancePage() {
                   <div className="grid grid-cols-2 gap-4">
                     <Card>
                       <CardContent className="p-4 text-center">
-                        <div className="text-2xl font-bold text-[#1F6CB6]">{selectedDateRecords.length}</div>
+                        <div className="text-2xl font-bold text-[#1F6CB6]">
+                          {selectedDateRecords.length}
+                        </div>
                         <div className="text-sm text-gray-600">Sessions</div>
                       </CardContent>
                     </Card>
                     <Card>
                       <CardContent className="p-4 text-center">
                         <div className="text-2xl font-bold text-green-600">
-                          {selectedDateRecords.filter(r => r.checkOutTime).length}
+                          {
+                            selectedDateRecords.filter((r) => r.checkOutTime)
+                              .length
+                          }
                         </div>
                         <div className="text-sm text-gray-600">Completed</div>
                       </CardContent>
@@ -499,11 +576,16 @@ export default function ModernAttendancePage() {
                   {/* Individual Sessions */}
                   <div className="space-y-4">
                     {selectedDateRecords.map((session, index) => (
-                      <Card key={session.id} className="border-l-4 border-l-[#1F6CB6]">
+                      <Card
+                        key={session.id}
+                        className="border-l-4 border-l-[#1F6CB6]"
+                      >
                         <CardContent className="p-6">
                           {/* Session Header */}
                           <div className="flex items-center justify-between mb-4">
-                            <h3 className="font-semibold text-lg">Session {index + 1}</h3>
+                            <h3 className="font-semibold text-lg">
+                              Session {index + 1}
+                            </h3>
                             <div className="flex items-center gap-2">
                               {session.minutesWorked > 0 && (
                                 <span className="text-sm text-gray-600">
@@ -519,25 +601,30 @@ export default function ModernAttendancePage() {
                             <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
                               <LogIn className="h-5 w-5 text-green-600" />
                               <div>
-                                <p className="text-sm font-medium text-green-800">Check In</p>
+                                <p className="text-sm font-medium text-green-800">
+                                  Check In
+                                </p>
                                 <p className="text-lg font-semibold text-green-900">
                                   {formatTime(session.checkInTime)}
                                 </p>
                               </div>
                             </div>
-                            
+
                             <div className="flex items-center gap-3 p-3 bg-red-50 rounded-lg">
                               <LogOut className="h-5 w-5 text-red-600" />
                               <div>
-                                <p className="text-sm font-medium text-red-800">Check Out</p>
+                                <p className="text-sm font-medium text-red-800">
+                                  Check Out
+                                </p>
                                 <p className="text-lg font-semibold text-red-900">
-                                  {session.checkOutTime ? formatTime(session.checkOutTime) : "Not checked out"}
+                                  {session.checkOutTime
+                                    ? formatTime(session.checkOutTime)
+                                    : "Not checked out"}
                                 </p>
                               </div>
                             </div>
                           </div>
 
-                         
                           {/* Agendas
                           {session.agendaIds && session.agendaIds.length > 0 && (
                             <div className="mb-4">
@@ -568,28 +655,35 @@ export default function ModernAttendancePage() {
                               <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
                                 <MessageSquare className="h-5 w-5 text-blue-600 mt-0.5" />
                                 <div>
-                                  <p className="text-sm font-medium text-blue-800">Remark</p>
-                                  <p className="text-sm text-blue-600 whitespace-pre-wrap">{session.remark}</p>
+                                  <p className="text-sm font-medium text-blue-800">
+                                    Remark
+                                  </p>
+                                  <p className="text-sm text-blue-600 whitespace-pre-wrap">
+                                    {session.remark}
+                                  </p>
                                 </div>
                               </div>
                             )}
-                            
-                            {session.referenceLink && session.referenceLink !== "na" && (
-                              <div className="flex items-center gap-3 p-3 bg-purple-50 rounded-lg">
-                                <ExternalLink className="h-5 w-5 text-purple-600" />
-                                <div>
-                                  <p className="text-sm font-medium text-purple-800">Reference</p>
-                                  <a 
-                                    href={session.referenceLink} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    className="text-sm text-purple-600 hover:underline break-all"
-                                  >
-                                    View Link
-                                  </a>
+
+                            {session.referenceLink &&
+                              session.referenceLink !== "na" && (
+                                <div className="flex items-center gap-3 p-3 bg-purple-50 rounded-lg">
+                                  <ExternalLink className="h-5 w-5 text-purple-600" />
+                                  <div>
+                                    <p className="text-sm font-medium text-purple-800">
+                                      Reference
+                                    </p>
+                                    <a
+                                      href={session.referenceLink}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-sm text-purple-600 hover:underline break-all"
+                                    >
+                                      View Link
+                                    </a>
+                                  </div>
                                 </div>
-                              </div>
-                            )}
+                              )}
                           </div>
                         </CardContent>
                       </Card>
