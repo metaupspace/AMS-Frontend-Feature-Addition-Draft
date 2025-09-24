@@ -1,2 +1,2 @@
-export const url= "https://api.ams.metaupspace.com/"
+export const url= "http://localhost:9090/"
 

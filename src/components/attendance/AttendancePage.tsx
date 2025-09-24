@@ -193,14 +193,7 @@ export default function ModernAttendancePage() {
     setDailyDetailModal(true);
   };
 
-  const handleUpdate = async () => {
-    //implemetation of handleUpdate function left
-  };
-
-  const handlDelete = async () =>{
-    //implementaion of handleDelete is Lleft
-  }
-
+  
   // Show loading state while auth is initializing or client is not ready
   if (!isClient || !isInitialized || authLoading) {
     return (
@@ -469,8 +462,6 @@ export default function ModernAttendancePage() {
                         <span className="text-sm text-gray-600 max-w-[150px] truncate block">
                           <EditAttendance
                             record={record}
-                            onUpdate={handleUpdate}
-                            onDelete={handlDelete}
                           />
                         </span>
                       </TableCell>

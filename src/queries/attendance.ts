@@ -226,7 +226,12 @@ export const attendanceQueries = {
   },
   requestEditAttendance: async(data : AttendanceEditRequest): Promise<AttendanceEditRequest |null>=>{
     console.log("Send Attendance Edit Request")
+    if(!data.employeeId){
+      console.log("No emloyee Id provided to send AttendanceRequest");
+    }
+    const  response = await apiClient.post<AttendanceEditRequest>("/employee/attendance-requests",data);
+    console.log("Edit Request send with data", response.data);
 
-    return null;
+    return response.data;
   }
 };
