@@ -160,7 +160,7 @@ export default function HRDashboard() {
 
       {/* Main Content Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             Overview
@@ -172,6 +172,9 @@ export default function HRDashboard() {
           <TabsTrigger value="activity" className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />
             Daily Activity
+          </TabsTrigger>
+          <TabsTrigger value="request" className="flex items-center gap-2">
+            Attendance Requests
           </TabsTrigger>
         </TabsList>
 
@@ -230,7 +233,7 @@ export default function HRDashboard() {
             calculateAttendanceRate={calculateAttendanceRate}
           />
         </TabsContent>
-
+                  
         {/* Daily Activity Tab */}
         <TabsContent value="activity">
           <DailyActivityCard />

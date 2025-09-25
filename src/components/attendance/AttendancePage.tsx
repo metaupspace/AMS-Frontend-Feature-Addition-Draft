@@ -462,6 +462,7 @@ export default function ModernAttendancePage() {
                         <span className="text-sm text-gray-600 max-w-[150px] truncate block">
                           <EditAttendance
                             record={record}
+                            attendance = {filteredRecords}
                           />
                         </span>
                       </TableCell>
