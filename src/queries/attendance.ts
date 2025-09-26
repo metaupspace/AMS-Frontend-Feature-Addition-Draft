@@ -10,7 +10,8 @@ import {
   AttendanceAgenda,
   MonthlyAttendanceParams,
   DailyAttendanceParams,
-  AttendanceEditRequest
+  AttendanceEditRequest,
+  AttendanceReviewRequest
 } from "@/models/attendance";
 
 // New interface for active session response
@@ -233,5 +234,47 @@ export const attendanceQueries = {
     console.log("Edit Request send with data", response.data);
 
     return response.data;
+  },
+
+ getAllEditAttendanceRequests: async (): Promise<AttendanceReviewRequest[] | null> => {
+    console.log("Fetching all attendance edit requests (HR access)");
+    
+    try {
+      // HR endpoint to get all attendance edit requests
+      const response = await apiClient.get<AttendanceReviewRequest[]>("/hr/getall-requests");
+      console.log("All edit requests response:", response.data);
+      return response.data || [];
+    } catch (error: any) {
+      console.error("Error fetching all attendance edit requests:", error);
+      
+      // If it's a 404 or 400, return empty array instead of throwing
+      if (error.response?.status === 404 || error.response?.status === 400) {
+        console.log("No edit requests found, returning empty array");
+        return [];
+      }
+      
+      throw error;
+    }
+  },
+
+  reviewEditRequestAttendance: async (
+    requestId: string,
+    approved: boolean
+  ): Promise<AttendanceEditRequest | null> => {
+    console.log("review edit request");
+    try {
+      const response = await apiClient.put<AttendanceEditRequest>(
+        `/hr/${requestId}/review`,
+        {},
+        { params: { approved } } 
+      );
+      console.log("Attendance reviewed", response.data);
+
+      return response.data || null;
+    } catch (error: any) {
+      console.log("Error Reviewing request", error);
+      return null;
+    }
   }
+  
 };

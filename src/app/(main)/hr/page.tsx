@@ -25,7 +25,7 @@ import { TimesheetDownloadModal } from "./document/TimesheetDownloadModal";
 import { DailyActivityCard } from "./document/DailyActivityCard";
 import { EmployeeStatsCards } from "./document/EmployeeStatsCards";
 import { EmployeeManagementTable } from "./document/EmployeeManagementTable";
-
+import { AttendanceRequests } from "./document/AttendanceRequests";
 export default function HRDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -237,6 +237,9 @@ export default function HRDashboard() {
         {/* Daily Activity Tab */}
         <TabsContent value="activity">
           <DailyActivityCard />
+        </TabsContent>
+        <TabsContent value="request">
+          <AttendanceRequests></AttendanceRequests>
         </TabsContent>
       </Tabs>
 

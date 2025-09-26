@@ -28,6 +28,8 @@ export interface AttendanceRecord {
   activeSession: boolean;
   minutesWorked: number | null;
 }
+
+
 export interface AttendanceEditRequest{
   employeeId: string,
   attendanceId: string,
@@ -35,6 +37,18 @@ export interface AttendanceEditRequest{
   requestCheckIn: string,
   requestCheckOut:string,
   reason:string
+}
+
+export interface AttendanceReviewRequest{
+  id: string,
+  employeeId: string,
+  attendanceId: string,
+  date: string,
+  requestCheckIn: string,
+  requestCheckOut:string,
+  reason:string,
+  reviewedBy: string,
+  reviewedAt: string
 }
 
 export interface AttendanceAgenda {
