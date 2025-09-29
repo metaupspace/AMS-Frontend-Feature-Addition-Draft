@@ -587,8 +587,13 @@ const EditAttendance: React.FC<EditAttendanceProps> = ({ record , attendance }) 
   };
 
   // Check if form is valid for submit button
-  const isFormValid = () => {
-    return Object.keys(errors).length === 0 && 
+ const isFormValid = () => {
+    // Filter out undefined/null errors
+    const validErrors = Object.entries(errors).filter(([key, value]) => 
+      value !== undefined && value !== null && value !== ''
+    );
+    
+    return validErrors.length === 0 && 
            remark.trim().length >= 10 && 
            (checkIn.trim() || checkOut.trim());
   };

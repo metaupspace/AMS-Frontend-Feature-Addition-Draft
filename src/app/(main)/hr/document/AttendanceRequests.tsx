@@ -36,6 +36,7 @@ import {
   AttendanceReviewRequest,
 } from "@/models/attendance";
 
+
 export enum RequestStatus {
   PENDING = "PENDING",
   APPROVED = "APPROVED",
@@ -80,12 +81,13 @@ export function AttendanceRequests() {
   // Handle approval of request
   const handleApproveRequest = async (
     requestId: string,
-    requestData: AttendanceReviewRequest
+    requestData: boolean
   ) => {
     try {
       setIsProcessing(true);
       // approval request to be added
-
+      const response = await attendanceQueries.reviewEditRequestAttendance(requestId , showApprovalModal);
+      console.log("request accepted", response);
       //
       console.log("Approving request:", requestId, requestData);
 
@@ -100,12 +102,14 @@ export function AttendanceRequests() {
   // Handle rejection of request
   const handleRejectRequest = async (
     requestId: string,
-    requestData: AttendanceReviewRequest
+    requestData: boolean
   ) => {
     try {
       setIsProcessing(true);
       // rejection logic to be added
       //
+      const response = await attendanceQueries.reviewEditRequestAttendance(requestId , showApprovalModal);
+      console.log("request accepted", response);
 
       //
       console.log("Rejecting request:", requestId, requestData);
@@ -118,6 +122,7 @@ export function AttendanceRequests() {
     }
   };
 
+  // Filter requests based on search and filters
   // Filter requests based on search and filters
   const filteredRequests = requests.filter((request) => {
     const matchesSearch =
@@ -151,7 +156,7 @@ export function AttendanceRequests() {
     }
 
     return matchesSearch && matchesStatus && matchesDate;
-  });
+  }).reverse();
 
   const handleActionClick = (
     requestId: string,
@@ -173,9 +178,9 @@ export function AttendanceRequests() {
         if (!requestData) return;
 
         if (actionType === "approve") {
-          await handleApproveRequest(selectedRequest, requestData);
+          await handleApproveRequest(selectedRequest, true);
         } else if (actionType === "reject") {
-          await handleRejectRequest(selectedRequest, requestData);
+          await handleRejectRequest(selectedRequest, false);
         }
       } catch (error) {
         console.error("Failed to process request:", error);
