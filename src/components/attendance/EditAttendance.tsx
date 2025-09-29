@@ -38,14 +38,16 @@ const FormatTime = (timeString?: string): string => {
 };
 
 // Enhanced time validation and parsing
-const validateAndParseTime = (timeString: string, baseDate?: string): { 
+const validateAndParseTime = (
+  timeString: string,
+  baseDate?: string
+): { 
   isValid: boolean; 
   parsedTime?: string; 
   error?: string; 
 } => {
-  
   const trimmedTime = timeString.trim();
-  
+
   // Check for only whitespace
   if (trimmedTime === '') {
     return { isValid: false, error: "Time cannot be just spaces" };
@@ -54,30 +56,30 @@ const validateAndParseTime = (timeString: string, baseDate?: string): {
   // regex for 12-hour format validation
   const timeRegex = /^(0?[1-9]|1[0-2]):([0-5][0-9])\s*(AM|PM)$/i;
   const match = trimmedTime.match(timeRegex);
-  
+
   if (!match) {
     return { 
       isValid: false, 
       error: "Invalid time format. Use format: HH:MM AM/PM (e.g., 9:30 AM, 12:00 PM)" 
     };
   }
-  
+
   try {
     const base = baseDate ? new Date(baseDate) : new Date();
     let hours = parseInt(match[1]);
     const minutes = parseInt(match[2]);
     const meridiem = match[3].toUpperCase();
-    
+
     // Convert to 24-hour format
     if (meridiem === "PM" && hours !== 12) {
       hours += 12;
     } else if (meridiem === "AM" && hours === 12) {
       hours = 0;
     }
-    
+
     const result = new Date(base);
     result.setHours(hours, minutes, 0, 0);
-    
+
     // Validate the constructed date
     if (isNaN(result.getTime())) {
       return { 
@@ -85,10 +87,18 @@ const validateAndParseTime = (timeString: string, baseDate?: string): {
         error: "Invalid time value" 
       };
     }
-    
+
+    // ✅ Format as local IST string (YYYY-MM-DDTHH:mm:ss)
+    const year = result.getFullYear();
+    const month = String(result.getMonth() + 1).padStart(2, "0");
+    const day = String(result.getDate()).padStart(2, "0");
+    const hh = String(result.getHours()).padStart(2, "0");
+    const mm = String(result.getMinutes()).padStart(2, "0");
+    const ss = "00";
+
     return { 
       isValid: true, 
-      parsedTime: result.toISOString() 
+      parsedTime: `${year}-${month}-${day}T${hh}:${mm}:${ss}`  // stays in IST
     };
   } catch {
     return { 
@@ -97,6 +107,7 @@ const validateAndParseTime = (timeString: string, baseDate?: string): {
     };
   }
 };
+
 
 // Validate remark field
 const validateRemark = (remark: string): { isValid: boolean; error?: string } => {
@@ -493,23 +504,40 @@ const EditAttendance: React.FC<EditAttendanceProps> = ({ record , attendance }) 
       const attendanceDate = record.checkInTime 
         ? new Date(record.checkInTime).toISOString().split('T')[0] 
         : new Date().toISOString().split('T')[0];
+        console.log("=== SUBMISSION TIMING LOGS ===");
+      console.log("Original Record Check-In:", record.checkInTime);
+      console.log("Original Record Check-Out:", record.checkOutTime);
+      console.log("User Input Check-In:", checkIn);
+      console.log("User Input Check-Out:", checkOut);
 
       // Parse times for submission
       let requestCheckIn = record.checkInTime;
       let requestCheckOut = record.checkOutTime || "";
       
       if (checkIn.trim()) {
+        console.log("Processing Check-In time...");
         const checkInValidation = validateAndParseTime(checkIn, record.checkInTime);
+        console.log("Check-In Validation Result:", checkInValidation);
         if (checkInValidation.isValid && checkInValidation.parsedTime) {
           requestCheckIn = checkInValidation.parsedTime;
+          console.log("Parsed Check-In Time (ISO):", requestCheckIn);
+          console.log("Parsed Check-In Time (Date):", new Date(requestCheckIn).toLocaleString());
         }
+      } else {
+        console.log("Check-In field empty, using original:", requestCheckIn);
       }
       
       if (checkOut.trim()) {
+        console.log("Processing Check-Out time...");
         const checkOutValidation = validateAndParseTime(checkOut, record.checkOutTime || undefined);
+        console.log("Check-Out Validation Result:", checkOutValidation);
         if (checkOutValidation.isValid && checkOutValidation.parsedTime) {
           requestCheckOut = checkOutValidation.parsedTime;
+          console.log("Parsed Check-Out Time (ISO):", requestCheckOut);
+          console.log("Parsed Check-Out Time (Date):", new Date(requestCheckOut).toLocaleString());
         }
+      } else {
+        console.log("Check-Out field empty, using original:", requestCheckOut);
       }
 
       const editRequestData: AttendanceEditRequest = {
@@ -520,6 +548,13 @@ const EditAttendance: React.FC<EditAttendanceProps> = ({ record , attendance }) 
         requestCheckOut,
         reason: remark.trim(),
       };
+      console.log("=== FINAL REQUEST PAYLOAD ===");
+      console.log("Full Request Data:", editRequestData);
+      console.log("Request Check-In (ISO):", editRequestData.requestCheckIn);
+      console.log("Request Check-Out (ISO):", editRequestData.requestCheckOut);
+      console.log("Request Check-In (Readable):", new Date(editRequestData.requestCheckIn).toLocaleString());
+      console.log("Request Check-Out (Readable):", new Date(editRequestData.requestCheckOut).toLocaleString());
+      console.log("=== END TIMING LOGS ===");
 
       console.log("Submitting edit request:", editRequestData);
 
