@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect, useMemo } from "react";
+import { useQuery ,useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -54,6 +54,7 @@ export default function ModernAttendancePage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [isClient, setIsClient] = useState(false);
+  const queryClient = useQueryClient();
   const [dailyDetailModal, setDailyDetailModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
 
@@ -85,6 +86,18 @@ export default function ModernAttendancePage() {
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
+  // Get edit requests
+  const { data: editRequests = [], isLoading: editRequestsLoading } = useQuery({
+    queryKey: ["my-edit-requests", employee?.employeeId],
+    queryFn: () => {
+      console.log("Querying edit requests for employee:", employee?.employeeId);
+      return attendanceQueries.getMyEditRequests();
+    },
+    enabled: canMakeQueries,
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+  });
+
   // Get monthly attendance
   const {} = useQuery({
     queryKey: [
@@ -108,6 +121,25 @@ export default function ModernAttendancePage() {
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
+  const handleEditDialogClose = async () => {
+  await queryClient.invalidateQueries({ 
+    queryKey: ["attendance-records", employee?.employeeId] 
+  });
+  await queryClient.invalidateQueries({ 
+    queryKey: ["my-edit-requests", employee?.employeeId] 
+  });
+};
+
+  // Create a map of attendance ID to approved edit request reason
+  const approvedEditReasonsMap = useMemo(() => {
+    const map = new Map();
+    editRequests
+      .filter((req) => req.status === "APPROVED")
+      .forEach((req) => {
+        map.set(req.attendanceId, req.reason);
+      });
+    return map;
+  }, [editRequests]);
 
   const formatTime = (timeString) => {
     if (!isClient || !timeString) return "N/A";
@@ -128,6 +160,35 @@ export default function ModernAttendancePage() {
   };
 
   const getStatusBadge = (record) => {
+    // Priority 1: Show edit request status if it exists
+    if (record.editRequestStatus === "PENDING") {
+      return (
+        <Badge className="bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100 transition-colors duration-200">
+          <Clock className="h-3 w-3 mr-1" />
+          Pending Edit
+        </Badge>
+      );
+    }
+
+    if (record.editRequestStatus === "APPROVED") {
+      return (
+        <Badge className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100 transition-colors duration-200">
+          <CheckCircle className="h-3 w-3 mr-1" />
+          Edit Approved
+        </Badge>
+      );
+    }
+
+    if (record.editRequestStatus === "REJECTED") {
+      return (
+        <Badge className="bg-red-50 text-red-700 border-red-200 hover:bg-red-100 transition-colors duration-200">
+          <XCircle className="h-3 w-3 mr-1" />
+          Edit Rejected
+        </Badge>
+      );
+    }
+
+    // Priority 2: Show regular status if no edit request status
     if (record.activeSession) {
       return (
         <Badge className="bg-[#1F6CB6] text-white border-[#1F6CB6] hover:bg-[#1A5A9E] transition-colors duration-200">
@@ -136,6 +197,7 @@ export default function ModernAttendancePage() {
         </Badge>
       );
     }
+
     if (record.checkOutTime) {
       return (
         <Badge className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100 transition-colors duration-200">
@@ -144,12 +206,23 @@ export default function ModernAttendancePage() {
         </Badge>
       );
     }
+
     return (
       <Badge className="bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100 transition-colors duration-200">
         <XCircle className="h-3 w-3 mr-1" />
         Incomplete
       </Badge>
     );
+  };
+
+  // Helper function to get the reason for approved edit request
+  const getEditReason = (record) => {
+    // Only show reason if the edit request status is APPROVED
+    if (record.editRequestStatus === "APPROVED") {
+      const reason = approvedEditReasonsMap.get(record.id);
+      return reason || "N/A";
+    }
+    return "N/A";
   };
 
   // Get all sessions for a specific date
@@ -193,7 +266,6 @@ export default function ModernAttendancePage() {
     setDailyDetailModal(true);
   };
 
-  
   // Show loading state while auth is initializing or client is not ready
   if (!isClient || !isInitialized || authLoading) {
     return (
@@ -228,7 +300,7 @@ export default function ModernAttendancePage() {
     );
   }
 
-  if (recordsLoading) {
+  if (recordsLoading || editRequestsLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px] bg-[#F7FCFE]">
         <div className="flex items-center gap-2">
@@ -384,7 +456,7 @@ export default function ModernAttendancePage() {
           </CardHeader>
 
           <CardContent>
-            <div className="rounded-lg border border-gray-200 overflow-hidden">
+            <div className="rounded-lg border border-gray-200 overflow-hidden overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-[#F7FCFE]">
@@ -405,6 +477,9 @@ export default function ModernAttendancePage() {
                     </TableHead>
                     <TableHead className="font-semibold text-[#1F6CB6]">
                       Remark
+                    </TableHead>
+                    <TableHead className="font-semibold text-[#1F6CB6]">
+                      Reason
                     </TableHead>
                     <TableHead className="font-semibold text-[#1F6CB6]">
                       Edit
@@ -458,13 +533,22 @@ export default function ModernAttendancePage() {
                           {record.remark || "No remark"}
                         </span>
                       </TableCell>
+
                       <TableCell>
-                        <span className="text-sm text-gray-600 max-w-[150px] truncate block">
-                          <EditAttendance
-                            record={record}
-                            attendance = {filteredRecords}
-                          />
+                        <span
+                          className="text-sm text-gray-600 max-w-[200px] truncate block"
+                          title={getEditReason(record)}
+                        >
+                          {getEditReason(record)}
                         </span>
+                      </TableCell>
+
+                      <TableCell>
+                        <EditAttendance
+                          record={record}
+                          attendance={filteredRecords}
+                          onClose={handleEditDialogClose}
+                        />
                       </TableCell>
                     </TableRow>
                   ))}
@@ -616,30 +700,6 @@ export default function ModernAttendancePage() {
                               </div>
                             </div>
                           </div>
-
-                          {/* Agendas
-                          {session.agendaIds && session.agendaIds.length > 0 && (
-                            <div className="mb-4">
-                              <div className="flex items-center justify-between mb-3">
-                                <h4 className="font-medium text-gray-900">Agendas</h4>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-sm text-gray-600">
-                                    {session.agendaIds.length} task{session.agendaIds.length !== 1 ? 's' : ''}
-                                  </span>
-                                </div>
-                              </div>
-                              
-                              <div className="space-y-2">
-                                {session.agendaIds.map((agendaId, agendaIndex) => (
-                                  <div key={agendaId} className="flex items-center gap-1 p-2 ">
-                                    <span className="text-sm flex-1 text-gray-900">
-                                      Agenda {agendaIndex + 1} - {agendaId}
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )} */}
 
                           {/* Additional Info */}
                           <div className="grid md:grid-cols-2 gap-4">

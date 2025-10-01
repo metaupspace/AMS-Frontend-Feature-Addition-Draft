@@ -27,6 +27,7 @@ export interface AttendanceRecord {
   checkInLocation: string;
   activeSession: boolean;
   minutesWorked: number | null;
+  editRequestStatus: string
 }
 
 
@@ -37,6 +38,7 @@ export interface AttendanceEditRequest{
   requestCheckIn: string,
   requestCheckOut:string,
   reason:string
+  status:string
 }
 
 export interface AttendanceReviewRequest{
@@ -48,7 +50,8 @@ export interface AttendanceReviewRequest{
   requestCheckOut:string,
   reason:string,
   reviewedBy: string,
-  reviewedAt: string
+  reviewedAt: string,
+  status: string
 }
 
 export interface AttendanceAgenda {

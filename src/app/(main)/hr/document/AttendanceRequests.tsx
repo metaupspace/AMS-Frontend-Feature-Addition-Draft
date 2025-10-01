@@ -193,30 +193,31 @@ export function AttendanceRequests() {
     setActionType(null);
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case RequestStatus.PENDING:
-        return (
-          <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">
-            Pending
-          </Badge>
-        );
-      case RequestStatus.APPROVED:
-        return (
-          <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
-            Approved
-          </Badge>
-        );
-      case RequestStatus.REJECTED:
-        return (
-          <Badge className="bg-red-100 text-red-800 hover:bg-red-100">
-            Rejected
-          </Badge>
-        );
-      default:
-        return <Badge variant="secondary">{status || "Unknown"}</Badge>;
-    }
-  };
+  const getStatusBadge = (request: AttendanceReviewRequest) => {
+  switch (request.status) {
+    case "PENDING":
+      return (
+        <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">
+          Pending
+        </Badge>
+      );
+    case "APPROVED":
+      return (
+        <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
+          Approved
+        </Badge>
+      );
+    case "REJECTED":
+      return (
+        <Badge className="bg-red-100 text-red-800 hover:bg-red-100">
+          Rejected
+        </Badge>
+      );
+    default:
+      return <Badge variant="secondary">Reviewed</Badge>;
+  }
+};
+
 
   const formatDateTime = (dateTimeString: string) => {
     if (!dateTimeString) return "N/A";
@@ -404,11 +405,10 @@ export function AttendanceRequests() {
                       </p>
                     </TableCell>
 
-                    <TableCell>
-                      {!request.reviewedBy
-                        ? getStatusBadge("PENDING")
-                        : getStatusBadge("REVIEWED")}
-                    </TableCell>
+                   <TableCell>
+  {getStatusBadge(request)}
+</TableCell>
+
 
                     <TableCell>
                       {request.reviewedBy ? (

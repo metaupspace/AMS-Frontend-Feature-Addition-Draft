@@ -225,12 +225,13 @@ export const attendanceQueries = {
     const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
     return await attendanceQueries.getDailyAttendance({ employeeId, date: today });
   },
+  
   requestEditAttendance: async(data : AttendanceEditRequest): Promise<AttendanceEditRequest |null>=>{
     console.log("Send Attendance Edit Request")
     if(!data.employeeId){
       console.log("No emloyee Id provided to send AttendanceRequest");
     }
-    const  response = await apiClient.post<AttendanceEditRequest>("/employee/attendance-requests",data);
+    const  response = await apiClient.post<AttendanceEditRequest>("/attendance/attendance-requests",data);
     console.log("Edit Request send with data", response.data);
 
     return response.data;
@@ -275,6 +276,23 @@ export const attendanceQueries = {
       console.log("Error Reviewing request", error);
       return null;
     }
+  },
+
+  getMyEditRequests: async (): Promise<AttendanceEditRequest[] | null> => {
+  console.log("Fetching my attendance edit requests");
+  try {
+    const response = await apiClient.get<AttendanceEditRequest[]>(
+      `/attendance/my-requests`
+    );
+    console.log("My Requests Fetched", response.data);
+
+    return response.data || null;
+  } catch (error: any) {
+    console.error("Error fetching my requests", error);
+    return null;
   }
+},
+
+
   
 };
