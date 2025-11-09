@@ -5,6 +5,7 @@ import {
   HREmployee, 
   CreateEmployeeRequest, 
   CreateEmployeeResponse,
+  UpdateEmployeeRequest,
   MonthlyReportRequest,
   MonthlyReportResponse,
   EmployeeTimesheetParams,
@@ -25,9 +26,20 @@ export const hrQueries = {
     return response.data;
   },
 
-  // Deactivate employee
-  deactivateEmployee: async (employeeId: string): Promise<void> => {
-    await apiClient.post(`/hr/${employeeId}/deactivate`);
+  // Toggle employee status (activate/deactivate)
+  toggleEmployeeStatus: async (employeeId: string): Promise<void> => {
+    await apiClient.post(`/hr/${employeeId}/toggle-status`);
+  },
+
+  // Update employee
+  updateEmployee: async (employeeId: string, data: UpdateEmployeeRequest): Promise<HREmployee> => {
+    const response = await apiClient.put<HREmployee>(`/hr/employee/${employeeId}`, data);
+    return response.data;
+  },
+
+  // Delete employee
+  deleteEmployee: async (employeeId: string): Promise<void> => {
+    await apiClient.delete(`/hr/employee/${employeeId}`);
   },
 
   // Generate monthly report

@@ -22,6 +22,9 @@ import {
 import { 
   MoreHorizontal, 
   UserX, 
+  UserCheck,
+  Trash2,
+  Edit,
   Search, 
   Filter,
   Users,
@@ -32,8 +35,11 @@ import { ConfirmationModal } from "@/components/ui/confirmation-modal";
 interface EmployeeManagementTableProps {
   employees: HREmployee[];
   isLoading: boolean;
-  onDeactivateEmployee: (employeeId: string) => void;
-  isDeactivating: boolean;
+  onToggleStatus: (employeeId: string) => void;
+  onDeleteEmployee: (employeeId: string) => void;
+  onEditEmployee: (employee: HREmployee) => void;
+  isToggling: boolean;
+  isDeleting: boolean;
   formatMinutesToHours: (minutes: number) => string;
   calculateAttendanceRate: (employee: HREmployee) => number;
 }
@@ -41,8 +47,11 @@ interface EmployeeManagementTableProps {
 export function EmployeeManagementTable({
   employees,
   isLoading,
-  onDeactivateEmployee,
-  isDeactivating,
+  onToggleStatus,
+  onDeleteEmployee,
+  onEditEmployee,
+  isToggling,
+  isDeleting,
   formatMinutesToHours,
   calculateAttendanceRate,
 }: EmployeeManagementTableProps) {
@@ -50,7 +59,9 @@ export function EmployeeManagementTable({
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [selectedEmployee, setSelectedEmployee] = useState<string | null>(null);
-  const [showDeactivateModal, setShowDeactivateModal] = useState(false);
+  const [showToggleModal, setShowToggleModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isActivating, setIsActivating] = useState(false);
 
   // Filter employees based on search and filters
   const filteredEmployees = employees.filter((employee) => {
@@ -73,16 +84,30 @@ export function EmployeeManagementTable({
   // Get unique roles for filter
   const uniqueRoles = [...new Set(employees.map(emp => emp.role))];
 
-  const handleDeactivateClick = (employeeId: string) => {
+  const handleToggleClick = (employeeId: string, isActive: boolean) => {
     setSelectedEmployee(employeeId);
-    setShowDeactivateModal(true);
+    setIsActivating(!isActive);
+    setShowToggleModal(true);
   };
 
-  const handleConfirmDeactivate = () => {
+  const handleConfirmToggle = () => {
     if (selectedEmployee) {
-      onDeactivateEmployee(selectedEmployee);
+      onToggleStatus(selectedEmployee);
     }
-    setShowDeactivateModal(false);
+    setShowToggleModal(false);
+    setSelectedEmployee(null);
+  };
+
+  const handleDeleteClick = (employeeId: string) => {
+    setSelectedEmployee(employeeId);
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (selectedEmployee) {
+      onDeleteEmployee(selectedEmployee);
+    }
+    setShowDeleteModal(false);
     setSelectedEmployee(null);
   };
 
@@ -285,15 +310,36 @@ export function EmployeeManagementTable({
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          {employee.active && (
+                          <DropdownMenuItem
+                            onClick={() => onEditEmployee(employee)}
+                          >
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                          {employee.active ? (
                             <DropdownMenuItem
-                              onClick={() => handleDeactivateClick(employee.employeeId)}
+                              onClick={() => handleToggleClick(employee.employeeId, employee.active)}
                               className="text-red-600 focus:text-red-600"
                             >
                               <UserX className="h-4 w-4 mr-2" />
                               Deactivate
                             </DropdownMenuItem>
+                          ) : (
+                            <DropdownMenuItem
+                              onClick={() => handleToggleClick(employee.employeeId, employee.active)}
+                              className="text-green-600 focus:text-green-600"
+                            >
+                              <UserCheck className="h-4 w-4 mr-2" />
+                              Activate
+                            </DropdownMenuItem>
                           )}
+                          <DropdownMenuItem
+                            onClick={() => handleDeleteClick(employee.employeeId)}
+                            className="text-red-600 focus:text-red-600"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -312,15 +358,31 @@ export function EmployeeManagementTable({
         </CardContent>
       </Card>
 
-      {/* Deactivate Confirmation Modal */}
+      {/* Toggle Status Confirmation Modal */}
       <ConfirmationModal
-        isOpen={showDeactivateModal}
-        onClose={() => setShowDeactivateModal(false)}
-        onConfirm={handleConfirmDeactivate}
-        title="Deactivate Employee"
-        description={`Are you sure you want to deactivate this employee? They will no longer be able to access the system.`}
-        confirmText="Deactivate"
-        isLoading={isDeactivating}
+        isOpen={showToggleModal}
+        onClose={() => setShowToggleModal(false)}
+        onConfirm={handleConfirmToggle}
+        title={isActivating ? "Activate Employee" : "Deactivate Employee"}
+        description={
+          isActivating
+            ? "Are you sure you want to activate this employee? They will be able to access the system."
+            : "Are you sure you want to deactivate this employee? They will no longer be able to access the system."
+        }
+        confirmText={isActivating ? "Activate" : "Deactivate"}
+        isLoading={isToggling}
+        variant={isActivating ? "default" : "destructive"}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleConfirmDelete}
+        title="Delete Employee"
+        description="Are you sure you want to delete this employee? This action cannot be undone and will remove all associated data including attendance records."
+        confirmText="Delete"
+        isLoading={isDeleting}
         variant="destructive"
       />
     </>

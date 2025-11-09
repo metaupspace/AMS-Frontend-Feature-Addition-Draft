@@ -20,6 +20,7 @@ import { hrQueries } from "@/queries/hr";
 import { toast } from "@/hooks/use-toast";
 import { HREmployee, EmployeeStats } from "@/models/hr";
 import { CreateEmployeeModal } from "./document/CreateEmployeeModal";
+import { UpdateEmployeeModal } from "./document/UpdateEmployeeModal";
 import { MonthlyReportModal } from "./document/MonthlyReportModal";
 import { TimesheetDownloadModal } from "./document/TimesheetDownloadModal";
 import { DailyActivityCard } from "./document/DailyActivityCard";
@@ -29,8 +30,10 @@ import { AttendanceRequests } from "./document/AttendanceRequests";
 export default function HRDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [showTimesheetModal, setShowTimesheetModal] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState<HREmployee | null>(null);
   
   const queryClient = useQueryClient();
 
@@ -44,23 +47,43 @@ export default function HRDashboard() {
     queryFn: hrQueries.getEmployees,
   });
 
-  // Deactivate employee mutation
-  const deactivateEmployeeMutation = useMutation({
-    mutationFn: hrQueries.deactivateEmployee,
+  // Toggle employee status mutation
+  const toggleStatusMutation = useMutation({
+    mutationFn: hrQueries.toggleEmployeeStatus,
     onSuccess: () => {
       toast({
         title: "Success",
-        description: "Employee has been deactivated successfully",
+        description: "Employee status updated successfully",
       });
       queryClient.invalidateQueries({ queryKey: ['hr-employees'] });
     },
     onError: (error) => {
       toast({
         title: "Error",
-        description: "Failed to deactivate employee",
+        description: "Failed to update employee status",
         variant: "destructive",
       });
-      console.error("Deactivate employee error:", error);
+      console.error("Toggle status error:", error);
+    },
+  });
+
+  // Delete employee mutation
+  const deleteEmployeeMutation = useMutation({
+    mutationFn: hrQueries.deleteEmployee,
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Employee deleted successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ['hr-employees'] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to delete employee",
+        variant: "destructive",
+      });
+      console.error("Delete employee error:", error);
     },
   });
 
@@ -69,7 +92,7 @@ export default function HRDashboard() {
     totalEmployees: employees.length,
     activeEmployees: employees.filter(emp => emp.active).length,
     presentToday: employees.filter(emp => 
-      emp.presentDates.includes(new Date().toISOString().split('T')[0])
+      emp.active && emp.presentDates.includes(new Date().toISOString().split('T')[0])
     ).length,
     averageWorkingHours: employees.length > 0 
       ? employees.reduce((acc, emp) => acc + (emp.currentWeekMinutes / 60), 0) / employees.length 
@@ -89,9 +112,20 @@ export default function HRDashboard() {
     return Math.round((employee.presentDaysThisMonth / employee.totalWorkingDaysThisMonth) * 100);
   };
 
-  // Handle employee deactivation
-  const handleDeactivateEmployee = (employeeId: string) => {
-    deactivateEmployeeMutation.mutate(employeeId);
+  // Handle employee status toggle
+  const handleToggleStatus = (employeeId: string) => {
+    toggleStatusMutation.mutate(employeeId);
+  };
+
+  // Handle employee deletion
+  const handleDeleteEmployee = (employeeId: string) => {
+    deleteEmployeeMutation.mutate(employeeId);
+  };
+
+  // Handle employee edit
+  const handleEditEmployee = (employee: HREmployee) => {
+    setSelectedEmployee(employee);
+    setShowUpdateModal(true);
   };
 
   // Handle refresh
@@ -227,8 +261,11 @@ export default function HRDashboard() {
           <EmployeeManagementTable
             employees={employees}
             isLoading={employeesLoading}
-            onDeactivateEmployee={handleDeactivateEmployee}
-            isDeactivating={deactivateEmployeeMutation.isPending}
+            onToggleStatus={handleToggleStatus}
+            onDeleteEmployee={handleDeleteEmployee}
+            onEditEmployee={handleEditEmployee}
+            isToggling={toggleStatusMutation.isPending}
+            isDeleting={deleteEmployeeMutation.isPending}
             formatMinutesToHours={formatMinutesToHours}
             calculateAttendanceRate={calculateAttendanceRate}
           />
@@ -251,6 +288,20 @@ export default function HRDashboard() {
           setShowCreateModal(false);
           queryClient.invalidateQueries({ queryKey: ['hr-employees'] });
         }}
+      />
+
+      <UpdateEmployeeModal
+        isOpen={showUpdateModal}
+        onClose={() => {
+          setShowUpdateModal(false);
+          setSelectedEmployee(null);
+        }}
+        onSuccess={() => {
+          setShowUpdateModal(false);
+          setSelectedEmployee(null);
+          queryClient.invalidateQueries({ queryKey: ['hr-employees'] });
+        }}
+        employee={selectedEmployee}
       />
 
       <MonthlyReportModal

@@ -42,6 +42,15 @@ export interface CreateEmployeeResponse {
   active: boolean;
 }
 
+export interface UpdateEmployeeRequest {
+  name: string;
+  email: string;
+  contact: string;
+  role: string;
+  position: string;
+  address: string;
+}
+
 export interface MonthlyReportRequest {
   year: number;
   month: number;

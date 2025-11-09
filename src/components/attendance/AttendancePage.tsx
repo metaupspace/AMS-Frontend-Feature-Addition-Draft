@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
 import EditAttendance from "./EditAttendance";
+import AttendanceDetailModal from "./AttendanceDetailModal";
 import {
   Table,
   TableBody,
@@ -57,6 +58,8 @@ export default function ModernAttendancePage() {
   const queryClient = useQueryClient();
   const [dailyDetailModal, setDailyDetailModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
+  const [attendanceDetailModal, setAttendanceDetailModal] = useState(false);
+  const [selectedAttendance, setSelectedAttendance] = useState(null);
 
   useEffect(() => {
     setIsClient(true);
@@ -130,14 +133,16 @@ export default function ModernAttendancePage() {
   });
 };
 
-  // Create a map of attendance ID to approved edit request reason
-  const approvedEditReasonsMap = useMemo(() => {
+  // Create a map of attendance ID to edit request status and reason
+  const editRequestsMap = useMemo(() => {
     const map = new Map();
-    editRequests
-      .filter((req) => req.status === "APPROVED")
-      .forEach((req) => {
-        map.set(req.attendanceId, req.reason);
+    editRequests.forEach((req) => {
+      map.set(req.attendanceId, {
+        status: req.status,
+        reason: req.reason,
+        requestId: req.requestId
       });
+    });
     return map;
   }, [editRequests]);
 
@@ -160,35 +165,40 @@ export default function ModernAttendancePage() {
   };
 
   const getStatusBadge = (record) => {
+    // Check if there's an edit request for this attendance
+    const editRequest = editRequestsMap.get(record.id);
+    
     // Priority 1: Show edit request status if it exists
-    if (record.editRequestStatus === "PENDING") {
-      return (
-        <Badge className="bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100 transition-colors duration-200">
-          <Clock className="h-3 w-3 mr-1" />
-          Pending Edit
-        </Badge>
-      );
+    if (editRequest) {
+      if (editRequest.status === "PENDING") {
+        return (
+          <Badge className="bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100 transition-colors duration-200">
+            <Clock className="h-3 w-3 mr-1" />
+            Pending
+          </Badge>
+        );
+      }
+
+      if (editRequest.status === "APPROVED") {
+        return (
+          <Badge className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100 transition-colors duration-200">
+            <CheckCircle className="h-3 w-3 mr-1" />
+            Approved
+          </Badge>
+        );
+      }
+
+      if (editRequest.status === "REJECTED") {
+        return (
+          <Badge className="bg-red-50 text-red-700 border-red-200 hover:bg-red-100 transition-colors duration-200">
+            <XCircle className="h-3 w-3 mr-1" />
+            ER Rejected
+          </Badge>
+        );
+      }
     }
 
-    if (record.editRequestStatus === "APPROVED") {
-      return (
-        <Badge className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100 transition-colors duration-200">
-          <CheckCircle className="h-3 w-3 mr-1" />
-          Edit Approved
-        </Badge>
-      );
-    }
-
-    if (record.editRequestStatus === "REJECTED") {
-      return (
-        <Badge className="bg-red-50 text-red-700 border-red-200 hover:bg-red-100 transition-colors duration-200">
-          <XCircle className="h-3 w-3 mr-1" />
-          Edit Rejected
-        </Badge>
-      );
-    }
-
-    // Priority 2: Show regular status if no edit request status
+    // Priority 2: Show regular status if no edit request
     if (record.activeSession) {
       return (
         <Badge className="bg-[#1F6CB6] text-white border-[#1F6CB6] hover:bg-[#1A5A9E] transition-colors duration-200">
@@ -200,10 +210,9 @@ export default function ModernAttendancePage() {
 
     if (record.checkOutTime) {
       return (
-        <Badge className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100 transition-colors duration-200">
-          <CheckCircle className="h-3 w-3 mr-1" />
-          Completed
-        </Badge>
+        <div>
+
+        </div>
       );
     }
 
@@ -215,14 +224,14 @@ export default function ModernAttendancePage() {
     );
   };
 
-  // Helper function to get the reason for approved edit request
+  // Helper function to get the reason for edit request
   const getEditReason = (record) => {
-    // Only show reason if the edit request status is APPROVED
-    if (record.editRequestStatus === "APPROVED") {
-      const reason = approvedEditReasonsMap.get(record.id);
-      return reason || "N/A";
+    const editRequest = editRequestsMap.get(record.id);
+    // Show reason if there's an edit request
+    if (editRequest) {
+      return editRequest.reason || "";
     }
-    return "N/A";
+    return "";
   };
 
   // Get all sessions for a specific date
@@ -244,6 +253,8 @@ export default function ModernAttendancePage() {
         (record.remark &&
           record.remark.toLowerCase().includes(searchTerm.toLowerCase()));
 
+      const editRequest = editRequestsMap.get(record.id);
+      
       const matchesStatus =
         statusFilter === "all" ||
         (statusFilter === "active" && record.activeSession) ||
@@ -252,7 +263,10 @@ export default function ModernAttendancePage() {
           !record.activeSession) ||
         (statusFilter === "incomplete" &&
           !record.checkOutTime &&
-          !record.activeSession);
+          !record.activeSession) ||
+        (statusFilter === "pending-edit" && editRequest?.status === "PENDING") ||
+        (statusFilter === "approved-edit" && editRequest?.status === "APPROVED") ||
+        (statusFilter === "rejected-edit" && editRequest?.status === "REJECTED");
 
       return matchesSearch && matchesStatus;
     })
@@ -264,6 +278,11 @@ export default function ModernAttendancePage() {
   const handleDateClick = (date) => {
     setSelectedDate(date);
     setDailyDetailModal(true);
+  };
+
+  const handleAttendanceClick = (record) => {
+    setSelectedAttendance(record);
+    setAttendanceDetailModal(true);
   };
 
   // Show loading state while auth is initializing or client is not ready
@@ -312,6 +331,15 @@ export default function ModernAttendancePage() {
   }
 
   const selectedDateRecords = selectedDate ? getDailyRecords(selectedDate) : [];
+  
+  // Working hours summary for the selected day
+  const STANDARD_MINUTES = 10 * 60; // 10 hours standard
+  const totalMinutesWorkedForDay = selectedDateRecords.reduce(
+    (sum, r) => sum + (r?.minutesWorked || 0),
+    0
+  );
+  const overtimeMinutes = Math.max(0, totalMinutesWorkedForDay - STANDARD_MINUTES);
+  const lessMinutes = Math.max(0, STANDARD_MINUTES - totalMinutesWorkedForDay);
 
   return (
     <div className="min-h-screen bg-[#F7FCFE]">
@@ -441,7 +469,7 @@ export default function ModernAttendancePage() {
               </div>
 
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-40 border-gray-200 focus:border-[#1F6CB6] transition-colors duration-200">
+                <SelectTrigger className="w-44 border-gray-200 focus:border-[#1F6CB6] transition-colors duration-200">
                   <Filter className="h-4 w-4 mr-2" />
                   <SelectValue />
                 </SelectTrigger>
@@ -450,6 +478,9 @@ export default function ModernAttendancePage() {
                   <SelectItem value="active">Active</SelectItem>
                   <SelectItem value="completed">Completed</SelectItem>
                   <SelectItem value="incomplete">Incomplete</SelectItem>
+                  <SelectItem value="pending-edit">Pending Edit</SelectItem>
+                  <SelectItem value="approved-edit">Approved Edit</SelectItem>
+                  <SelectItem value="rejected-edit">Rejected Edit</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -472,14 +503,15 @@ export default function ModernAttendancePage() {
                     <TableHead className="font-semibold text-[#1F6CB6]">
                       Duration
                     </TableHead>
-                    <TableHead className="font-semibold text-[#1F6CB6]">
-                      Status
-                    </TableHead>
+                    
                     <TableHead className="font-semibold text-[#1F6CB6]">
                       Remark
                     </TableHead>
                     <TableHead className="font-semibold text-[#1F6CB6]">
-                      Reason
+                      ER Reason
+                    </TableHead>
+                    <TableHead className="font-semibold text-[#1F6CB6]">
+                      ER Status
                     </TableHead>
                     <TableHead className="font-semibold text-[#1F6CB6]">
                       Edit
@@ -490,7 +522,8 @@ export default function ModernAttendancePage() {
                   {filteredRecords.map((record) => (
                     <TableRow
                       key={record.id}
-                      className="hover:bg-[#F7FCFE] transition-colors border-b border-gray-100"
+                      onClick={() => handleAttendanceClick(record)}
+                      className="hover:bg-[#F7FCFE] transition-colors border-b border-gray-100 cursor-pointer"
                     >
                       <TableCell>
                         <div>
@@ -526,7 +559,7 @@ export default function ModernAttendancePage() {
                         </span>
                       </TableCell>
 
-                      <TableCell>{getStatusBadge(record)}</TableCell>
+                      
 
                       <TableCell>
                         <span className="text-sm text-gray-600 max-w-[150px] truncate block">
@@ -542,12 +575,13 @@ export default function ModernAttendancePage() {
                           {getEditReason(record)}
                         </span>
                       </TableCell>
-
-                      <TableCell>
+                            <TableCell>{getStatusBadge(record)}</TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
                         <EditAttendance
                           record={record}
                           attendance={filteredRecords}
                           onClose={handleEditDialogClose}
+                          pendingEdit={editRequestsMap.get(record.id)?.status === "PENDING"}
                         />
                       </TableCell>
                     </TableRow>
@@ -627,7 +661,7 @@ export default function ModernAttendancePage() {
               {selectedDateRecords.length > 0 ? (
                 <>
                   {/* Day Summary */}
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <Card>
                       <CardContent className="p-4 text-center">
                         <div className="text-2xl font-bold text-[#1F6CB6]">
@@ -647,6 +681,44 @@ export default function ModernAttendancePage() {
                         <div className="text-sm text-gray-600">Completed</div>
                       </CardContent>
                     </Card>
+                    <Card>
+                      <CardContent className="p-4 text-center">
+                        <div className="text-2xl font-bold text-[#1F6CB6]">
+                          {totalMinutesWorkedForDay > 0
+                            ? formatDuration(totalMinutesWorkedForDay)
+                            : "0h 0m"}
+                        </div>
+                        <div className="text-sm text-gray-600">Total Working Hours</div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4 text-center">
+                        <div className="text-2xl font-bold text-gray-800">
+                          {formatDuration(STANDARD_MINUTES)}
+                        </div>
+                        <div className="text-sm text-gray-600">Standard Working Hours</div>
+                      </CardContent>
+                    </Card>
+                    {overtimeMinutes > 0 && (
+                      <Card>
+                        <CardContent className="p-4 text-center">
+                          <div className="text-2xl font-bold text-green-600">
+                            {formatDuration(overtimeMinutes)}
+                          </div>
+                          <div className="text-sm text-gray-600">Overtime </div>
+                        </CardContent>
+                      </Card>
+                    )}
+                    {lessMinutes > 0 && (
+                      <Card>
+                        <CardContent className="p-4 text-center">
+                          <div className="text-2xl font-bold text-amber-600">
+                            {formatDuration(lessMinutes)}
+                          </div>
+                          <div className="text-sm text-gray-600">Less Working Time</div>
+                        </CardContent>
+                      </Card>
+                    )}
                   </div>
 
                   {/* Individual Sessions */}
@@ -756,6 +828,13 @@ export default function ModernAttendancePage() {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Attendance Detail Modal */}
+        <AttendanceDetailModal
+          open={attendanceDetailModal}
+          onOpenChange={setAttendanceDetailModal}
+          attendance={selectedAttendance}
+        />
       </div>
     </div>
   );

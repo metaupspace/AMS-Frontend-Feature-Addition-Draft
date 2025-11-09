@@ -12,13 +12,15 @@ import {
 import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { attendanceQueries } from "@/queries/attendance";
-import { AttendanceRecord, AttendanceEditRequest } from "@/models/attendance";
+import { AttendanceRecord, AttendanceEditRequestDto } from "@/models/attendance";
 import { useAuth } from "@/app/context/AuthContext";
+import ScrollableTimePicker from "./ScrollableTimePicker";
 
 interface EditAttendanceProps {
   record: AttendanceRecord;
   attendance: AttendanceRecord[];
   onClose?: () => Promise<void>;
+  pendingEdit?: boolean;
 }
 
 interface ValidationErrors {
@@ -293,6 +295,7 @@ const EditAttendance: React.FC<EditAttendanceProps> = ({
   record,
   attendance,
   onClose,
+  pendingEdit,
 }) => {
   const { employee, isLoading: authLoading, isInitialized } = useAuth();
   const [open, setOpen] = useState<boolean>(false);
@@ -310,7 +313,7 @@ const EditAttendance: React.FC<EditAttendanceProps> = ({
   const queryClient = useQueryClient();
   const effectiveEmployeeId = employee?.employeeId;
 
-  const hasPendingRequest = record.editRequestStatus === "PENDING";
+  const hasPendingRequest = (pendingEdit === true) || record.editRequestStatus === "PENDING";
 
   useEffect(() => {
     if (open) {
@@ -572,14 +575,11 @@ const EditAttendance: React.FC<EditAttendanceProps> = ({
         }
       }
 
-      const editRequestData: AttendanceEditRequest = {
-        employeeId: effectiveEmployeeId,
+      const editRequestData: AttendanceEditRequestDto = {
         attendanceId: record.id,
-        date: attendanceDate,
         requestCheckIn,
         requestCheckOut,
         reason: remark.trim(),
-        status: "PENDING",
       };
 
       const response = await attendanceQueries.requestEditAttendance(
@@ -612,6 +612,22 @@ const EditAttendance: React.FC<EditAttendanceProps> = ({
 
       if (error instanceof Error) {
         errorMessage = error.message;
+        
+        // Check if it's a future time validation error
+        if (errorMessage.includes("PastOrPresent") || errorMessage.includes("cannot be in the future")) {
+          errorMessage = "Edit request can't be in future";
+        } else {
+          // Extract the user-friendly message from Spring Boot validation error if present
+          const allMatches = errorMessage.match(/default message\[([^\]]+)\]/g);
+          if (allMatches && allMatches.length > 0) {
+            // Get the last match and extract the content
+            const lastMatch = allMatches[allMatches.length - 1];
+            const messageContent = lastMatch.match(/default message\[([^\]]+)\]/);
+            if (messageContent && messageContent[1]) {
+              errorMessage = messageContent[1];
+            }
+          }
+        }
       } else if (typeof error === "object" && error !== null) {
         const apiError = error as any;
         if (apiError.response?.data?.message) {
@@ -659,16 +675,20 @@ const EditAttendance: React.FC<EditAttendanceProps> = ({
     );
   };
 
+  if (hasPendingRequest) {
+    return null;
+  }
+
   return (
     <div className="relative inline-block">
       <Dialog.Root open={open} onOpenChange={handleOpenChange}>
         <Dialog.Trigger asChild>
           <button
-            className="p-1 hover:bg-gray-100 rounded transition-colors duration-200 disabled:opacity-50"
+            className="p-1 hover:bg-gray-100 rounded transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             type="button"
             aria-label="Edit attendance record"
-            disabled={!isInitialized || authLoading}
-            title="Edit attendance"
+            disabled={!isInitialized || authLoading || hasPendingRequest}
+            title={hasPendingRequest ? "Edit disabled while request is pending" : "Edit attendance"}
           >
             <Edit size={18} className="text-gray-600" />
           </button>
@@ -809,25 +829,14 @@ const EditAttendance: React.FC<EditAttendanceProps> = ({
                     >
                       New Check In Time
                     </label>
-                    <div className="relative">
-                      <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <input
-                        id="checkIn"
-                        type="text"
-                        placeholder="e.g., 9:30 AM"
-                        value={checkIn}
-                        onChange={(e) =>
-                          handleInputChange("checkIn", e.target.value)
-                        }
-                        onBlur={(e) => handleBlur("checkIn", e.target.value)}
-                        className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 disabled:bg-gray-50 disabled:text-gray-500 ${
-                          errors.checkIn
-                            ? "border-red-300 focus:ring-red-500 focus:border-red-500"
-                            : "border-gray-300"
-                        }`}
-                        disabled={isSubmitting}
-                      />
-                    </div>
+                    <ScrollableTimePicker
+                      value={checkIn}
+                      onChange={(value) => handleInputChange("checkIn", value)}
+                      onBlur={(value) => handleBlur("checkIn", value)}
+                      placeholder="e.g., 9:30 AM"
+                      disabled={isSubmitting}
+                      error={!!errors.checkIn}
+                    />
                     {errors.checkIn && (
                       <p className="text-xs text-red-600 mt-1">
                         {errors.checkIn}
@@ -845,25 +854,14 @@ const EditAttendance: React.FC<EditAttendanceProps> = ({
                     >
                       New Check Out Time
                     </label>
-                    <div className="relative">
-                      <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <input
-                        id="checkOut"
-                        type="text"
-                        placeholder="e.g., 5:30 PM"
-                        value={checkOut}
-                        onChange={(e) =>
-                          handleInputChange("checkOut", e.target.value)
-                        }
-                        onBlur={(e) => handleBlur("checkOut", e.target.value)}
-                        className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 disabled:bg-gray-50 disabled:text-gray-500 ${
-                          errors.checkOut
-                            ? "border-red-300 focus:ring-red-500 focus:border-red-500"
-                            : "border-gray-300"
-                        }`}
-                        disabled={isSubmitting}
-                      />
-                    </div>
+                    <ScrollableTimePicker
+                      value={checkOut}
+                      onChange={(value) => handleInputChange("checkOut", value)}
+                      onBlur={(value) => handleBlur("checkOut", value)}
+                      placeholder="e.g., 5:30 PM"
+                      disabled={isSubmitting}
+                      error={!!errors.checkOut}
+                    />
                     {errors.checkOut && (
                       <p className="text-xs text-red-600 mt-1">
                         {errors.checkOut}

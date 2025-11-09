@@ -11,6 +11,8 @@ import {
   MonthlyAttendanceParams,
   DailyAttendanceParams,
   AttendanceEditRequest,
+  AttendanceEditRequestDto,
+  AttendanceEditRequestDetailsDto,
   AttendanceReviewRequest
 } from "@/models/attendance";
 
@@ -226,27 +228,140 @@ export const attendanceQueries = {
     return await attendanceQueries.getDailyAttendance({ employeeId, date: today });
   },
   
-  requestEditAttendance: async(data : AttendanceEditRequest): Promise<AttendanceEditRequest |null>=>{
-    console.log("Send Attendance Edit Request")
-    if(!data.employeeId){
-      console.log("No emloyee Id provided to send AttendanceRequest");
-    }
-    const  response = await apiClient.post<AttendanceEditRequest>("/attendance/attendance-requests",data);
-    console.log("Edit Request send with data", response.data);
-
-    return response.data;
-  },
-
- getAllEditAttendanceRequests: async (): Promise<AttendanceReviewRequest[] | null> => {
-    console.log("Fetching all attendance edit requests (HR access)");
+  // Employee creates an attendance edit request
+  requestEditAttendance: async(data: AttendanceEditRequestDto): Promise<AttendanceEditRequest | null> => {
+    console.log("Sending Attendance Edit Request:", data);
     
     try {
-      // HR endpoint to get all attendance edit requests
-      const response = await apiClient.get<AttendanceReviewRequest[]>("/hr/getall-requests");
-      console.log("All edit requests response:", response.data);
+      const response = await apiClient.post<AttendanceEditRequest>(
+        "/employee/attendance/edit-request",
+        data
+      );
+      console.log("Edit Request created successfully:", response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error("Error creating edit request:", error);
+      // Try to surface Spring validation errors clearly (e.g. @PastOrPresent)
+      const resp = error?.response;
+      const data = resp?.data;
+
+      // If backend sent a string body, check for specific validation errors
+      if (typeof data === "string" && data.trim()) {
+        // Check if it's a future time validation error
+        if (data.includes("PastOrPresent") || data.includes("cannot be in the future")) {
+          throw new Error("Edit request can't be in future");
+        }
+        
+        // For other errors, try to extract the default message
+        const allMatches = data.match(/default message\[([^\]]+)\]/g);
+        if (allMatches && allMatches.length > 0) {
+          // Get the last match and extract the content
+          const lastMatch = allMatches[allMatches.length - 1];
+          const messageContent = lastMatch.match(/default message\[([^\]]+)\]/);
+          if (messageContent && messageContent[1]) {
+            throw new Error(messageContent[1]);
+          }
+        }
+        // If no match, throw the entire string
+        throw new Error(data);
+      }
+
+      // Prefer field-level defaultMessage from standard Spring Boot error payload
+      // Shapes commonly seen:
+      // { message: "Validation failed ...", errors: [{ field, defaultMessage, ... }] }
+      // or { fieldErrors: [{ field, defaultMessage, ... }], message: "..." }
+      const fromErrorsArray = Array.isArray(data?.errors) && data.errors.length
+        ? (data.errors[0].defaultMessage || data.errors[0].message)
+        : undefined;
+
+      const fromFieldErrors = Array.isArray(data?.fieldErrors) && data.fieldErrors.length
+        ? (data.fieldErrors[0].defaultMessage || data.fieldErrors[0].message)
+        : undefined;
+
+      const fallbackMessage = data?.message || resp?.statusText || "Failed to submit edit request";
+
+      const picked = fromErrorsArray || fromFieldErrors || fallbackMessage;
+
+      // Optionally include which field failed if available
+      const fieldName = (Array.isArray(data?.errors) && data.errors[0]?.field)
+        || (Array.isArray(data?.fieldErrors) && data.fieldErrors[0]?.field)
+        || undefined;
+
+      const finalMessage = fieldName && picked
+        ? `${picked}`
+        : picked;
+
+      throw new Error(finalMessage);
+    }
+  },
+
+  // HR fetches all pending attendance edit requests
+  getAllEditAttendanceRequests: async (): Promise<AttendanceEditRequestDetailsDto[]> => {
+    console.log("Fetching all pending attendance edit requests (HR access)");
+    
+    try {
+      const response = await apiClient.get<AttendanceEditRequestDetailsDto[]>(
+        "/hr/attendance/edit-requests/pending"
+      );
+      console.log("Pending edit requests response:", response.data);
       return response.data || [];
     } catch (error: any) {
-      console.error("Error fetching all attendance edit requests:", error);
+      console.error("Error fetching pending edit requests:", error);
+      
+      // If it's a 404 or 400, return empty array instead of throwing
+      if (error.response?.status === 404 || error.response?.status === 400) {
+        console.log("No pending requests found, returning empty array");
+        return [];
+      }
+      
+      throw error;
+    }
+  },
+
+  // HR approves an attendance edit request
+  approveEditRequest: async (requestId: string): Promise<AttendanceEditRequest> => {
+    console.log("Approving edit request:", requestId);
+    
+    try {
+      const response = await apiClient.post<AttendanceEditRequest>(
+        `/hr/attendance/edit-requests/${requestId}/approve`
+      );
+      console.log("Request approved successfully:", response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error("Error approving request:", error);
+      throw error;
+    }
+  },
+
+  // HR rejects an attendance edit request
+  rejectEditRequest: async (requestId: string): Promise<AttendanceEditRequest> => {
+    console.log("Rejecting edit request:", requestId);
+    
+    try {
+      const response = await apiClient.post<AttendanceEditRequest>(
+        `/hr/attendance/edit-requests/${requestId}/reject`
+      );
+      console.log("Request rejected successfully:", response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error("Error rejecting request:", error);
+      throw error;
+    }
+  },
+
+  // Employee fetches their own attendance edit requests
+  getMyEditRequests: async (): Promise<AttendanceEditRequestDetailsDto[]> => {
+    console.log("Fetching my attendance edit requests");
+    
+    try {
+      const response = await apiClient.get<AttendanceEditRequestDetailsDto[]>(
+        `/employee/attendance/edit-requests`
+      );
+      console.log("My edit requests fetched:", response.data);
+      return response.data || [];
+    } catch (error: any) {
+      console.error("Error fetching my edit requests:", error);
       
       // If it's a 404 or 400, return empty array instead of throwing
       if (error.response?.status === 404 || error.response?.status === 400) {
@@ -257,41 +372,6 @@ export const attendanceQueries = {
       throw error;
     }
   },
-
-  reviewEditRequestAttendance: async (
-    requestId: string,
-    approved: boolean
-  ): Promise<AttendanceEditRequest | null> => {
-    console.log("review edit request");
-    try {
-      const response = await apiClient.put<AttendanceEditRequest>(
-        `/hr/${requestId}/review`,
-        {},
-        { params: { approved } } 
-      );
-      console.log("Attendance reviewed", response.data);
-
-      return response.data || null;
-    } catch (error: any) {
-      console.log("Error Reviewing request", error);
-      return null;
-    }
-  },
-
-  getMyEditRequests: async (): Promise<AttendanceEditRequest[] | null> => {
-  console.log("Fetching my attendance edit requests");
-  try {
-    const response = await apiClient.get<AttendanceEditRequest[]>(
-      `/attendance/my-requests`
-    );
-    console.log("My Requests Fetched", response.data);
-
-    return response.data || null;
-  } catch (error: any) {
-    console.error("Error fetching my requests", error);
-    return null;
-  }
-},
 
 
   

@@ -33,7 +33,7 @@ import { ConfirmationModal } from "@/components/ui/confirmation-modal";
 import { attendanceQueries } from "@/queries/attendance";
 import {
   AttendanceEditRequest,
-  AttendanceReviewRequest,
+  AttendanceEditRequestDetailsDto,
 } from "@/models/attendance";
 
 
@@ -44,7 +44,7 @@ export enum RequestStatus {
 }
 
 export function AttendanceRequests() {
-  const [requests, setRequests] = useState<AttendanceReviewRequest[]>([]);
+  const [requests, setRequests] = useState<AttendanceEditRequestDetailsDto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -79,17 +79,11 @@ export function AttendanceRequests() {
   };
 
   // Handle approval of request
-  const handleApproveRequest = async (
-    requestId: string,
-    requestData: boolean
-  ) => {
+  const handleApproveRequest = async (requestId: string) => {
     try {
       setIsProcessing(true);
-      // approval request to be added
-      const response = await attendanceQueries.reviewEditRequestAttendance(requestId , showApprovalModal);
-      console.log("request accepted", response);
-      //
-      console.log("Approving request:", requestId, requestData);
+      const response = await attendanceQueries.approveEditRequest(requestId);
+      console.log("Request approved successfully:", response);
 
       await fetchRequests();
     } catch (error) {
@@ -100,19 +94,11 @@ export function AttendanceRequests() {
   };
 
   // Handle rejection of request
-  const handleRejectRequest = async (
-    requestId: string,
-    requestData: boolean
-  ) => {
+  const handleRejectRequest = async (requestId: string) => {
     try {
       setIsProcessing(true);
-      // rejection logic to be added
-      //
-      const response = await attendanceQueries.reviewEditRequestAttendance(requestId , showApprovalModal);
-      console.log("request accepted", response);
-
-      //
-      console.log("Rejecting request:", requestId, requestData);
+      const response = await attendanceQueries.rejectEditRequest(requestId);
+      console.log("Request rejected successfully:", response);
 
       await fetchRequests();
     } catch (error) {
@@ -127,17 +113,16 @@ export function AttendanceRequests() {
   const filteredRequests = requests.filter((request) => {
     const matchesSearch =
       request.employeeId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      request.employeeName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       request.reason.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesStatus =
       statusFilter === "all" ||
-      (statusFilter === "PENDING" && !request.reviewedBy) ||
-      (statusFilter === "APPROVED" && request.reviewedBy) ||
-      (statusFilter === "REJECTED" && request.reviewedBy);
+      request.status === statusFilter;
 
     let matchesDate = true;
     if (dateFilter !== "all") {
-      const requestDate = new Date(request.date);
+      const requestDate = new Date(request.requestDate);
       const now = new Date();
 
       switch (dateFilter) {
@@ -174,13 +159,10 @@ export function AttendanceRequests() {
   const handleConfirmAction = async () => {
     if (selectedRequest && actionType) {
       try {
-        const requestData = requests.find((r) => r.id === selectedRequest);
-        if (!requestData) return;
-
         if (actionType === "approve") {
-          await handleApproveRequest(selectedRequest, true);
+          await handleApproveRequest(selectedRequest);
         } else if (actionType === "reject") {
-          await handleRejectRequest(selectedRequest, false);
+          await handleRejectRequest(selectedRequest);
         }
       } catch (error) {
         console.error("Failed to process request:", error);
@@ -193,7 +175,7 @@ export function AttendanceRequests() {
     setActionType(null);
   };
 
-  const getStatusBadge = (request: AttendanceReviewRequest) => {
+  const getStatusBadge = (request: AttendanceEditRequestDetailsDto) => {
   switch (request.status) {
     case "PENDING":
       return (
@@ -362,7 +344,7 @@ export function AttendanceRequests() {
               <TableBody>
                 {filteredRequests.map((request) => (
                   <TableRow
-                    key={request.id}
+                    key={request.requestId}
                     className="hover:bg-gray-50 transition-colors"
                   >
                     <TableCell>
@@ -371,7 +353,7 @@ export function AttendanceRequests() {
                           <User className="h-4 w-4" />
                         </div>
                         <div>
-                          <p className="font-medium">{request.employeeId}</p>
+                          <p className="font-medium">{request.employeeName}</p>
                           <p className="text-sm text-gray-600">
                             {request.employeeId}
                           </p>
@@ -381,7 +363,7 @@ export function AttendanceRequests() {
 
                     <TableCell>
                       <p className="text-sm font-medium">
-                        {formatDate(request.date)}
+                        {formatDate(request.requestDate)}
                       </p>
                     </TableCell>
 
@@ -411,9 +393,9 @@ export function AttendanceRequests() {
 
 
                     <TableCell>
-                      {request.reviewedBy ? (
+                      {request.reviewedByName ? (
                         <div className="text-sm">
-                          <p className="font-medium">{request.reviewedBy}</p>
+                          <p className="font-medium">{request.reviewedByName}</p>
                           <p className="text-gray-600">
                             {formatDateTime(request.reviewedAt)}
                           </p>
@@ -426,7 +408,7 @@ export function AttendanceRequests() {
                     </TableCell>
 
                     <TableCell>
-                      {!request.reviewedBy && (
+                      {!request.reviewedByName && request.status === "PENDING" && (
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button
@@ -440,7 +422,7 @@ export function AttendanceRequests() {
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem
                               onClick={() =>
-                                handleActionClick(request.id, "approve")
+                                handleActionClick(request.requestId, "approve")
                               }
                               className="text-green-600 focus:text-green-600"
                               disabled={isProcessing}
@@ -450,7 +432,7 @@ export function AttendanceRequests() {
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() =>
-                                handleActionClick(request.id, "reject")
+                                handleActionClick(request.requestId, "reject")
                               }
                               className="text-red-600 focus:text-red-600"
                               disabled={isProcessing}
